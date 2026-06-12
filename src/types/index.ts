@@ -190,3 +190,76 @@ export interface UseTTSReturn {
   /** 恢复暂停的语音 */
   resume: () => void;
 }
+
+/** LLM 消息角色 */
+export type LLMRole = 'system' | 'user' | 'assistant';
+
+/** LLM 文本消息 */
+export interface LLMTextMessage {
+  role: LLMRole;
+  content: string;
+}
+
+/** LLM 多模态消息（文本 + 图片） */
+export interface LLMMultimodalMessage {
+  role: LLMRole;
+  content: (
+    | { type: 'text'; text: string }
+    | {
+        type: 'image_url';
+        image_url: { url: string; detail?: 'low' | 'high' | 'auto' };
+      }
+  )[];
+}
+
+/** LLM 消息联合类型 */
+export type LLMMessage = LLMTextMessage | LLMMultimodalMessage;
+
+/** LLM API 调用配置 */
+export interface LLMConfig {
+  /** API Key */
+  apiKey: string;
+  /** API 端点 URL */
+  baseUrl?: string;
+  /** 模型名称 */
+  model?: string;
+  /** 最大输出 token 数 */
+  maxTokens?: number;
+  /** 温度 0-2 */
+  temperature?: number;
+}
+
+/** LLM 调用结果 */
+export interface LLMResult {
+  /** AI 返回的文本内容 */
+  content: string;
+  /** 输入 token 消耗数 */
+  inputTokens: number;
+  /** 输出 token 消耗数 */
+  outputTokens: number;
+  /** 模型名称 */
+  model: string;
+}
+
+/** LLM 调用选项 */
+export interface LLMCallOptions {
+  /** 用于中断请求的 AbortSignal */
+  signal?: AbortSignal;
+  /** 图片分析详细程度（仅多模态调用） */
+  imageDetail?: 'low' | 'high' | 'auto';
+}
+
+/** LLM 客户端接口 */
+export interface LLMClient {
+  /** 发送纯文本对话 */
+  chat: (
+    messages: LLMTextMessage[],
+    options?: LLMCallOptions,
+  ) => Promise<LLMResult>;
+  /** 发送多模态对话（文本 + 图片） */
+  chatWithImage: (
+    messages: LLMTextMessage[],
+    imageBase64: string,
+    options?: LLMCallOptions,
+  ) => Promise<LLMResult>;
+}
