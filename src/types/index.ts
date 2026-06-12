@@ -97,6 +97,8 @@ export interface UseSTTOptions {
   lang?: string;
   /** 是否持续监听，默认 false（单次识别后自动停止） */
   continuous?: boolean;
+  /** 静默超时时间（毫秒），用户停止说话超过此时长后自动截止。默认 1500ms */
+  silenceTimeout?: number;
 }
 
 /** useSTT Hook 返回值 */

@@ -12,6 +12,8 @@ interface SpeechRecognition extends EventTarget {
   onresult: ((event: SpeechRecognitionEvent) => void) | null;
   onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
   onend: (() => void) | null;
+  onspeechstart: (() => void) | null;
+  onspeechend: (() => void) | null;
 }
 
 interface SpeechRecognitionEvent extends Event {
@@ -76,7 +78,7 @@ function getRecognitionConstructor():
  * @returns 识别状态、文本和控制方法
  */
 export default function useSTT(options: UseSTTOptions = {}): UseSTTReturn {
-  const { lang = 'zh-CN', continuous = false } = options;
+  const { lang = 'zh-CN', continuous = false, silenceTimeout = 1500 } = options;
 
   const [state, setState] = useState<STTState>(() => {
     return getRecognitionConstructor() ? 'idle' : 'unsupported';
@@ -92,6 +94,8 @@ export default function useSTT(options: UseSTTOptions = {}): UseSTTReturn {
   const accumulatedRef = useRef('');
   // 组件是否已卸载
   const mountedRef = useRef(true);
+  // 静默超时计时器
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isSupported = state !== 'unsupported';
 
@@ -163,6 +167,37 @@ export default function useSTT(options: UseSTTOptions = {}): UseSTTReturn {
     };
 
     /**
+     * 静默超时：清除计时器
+     */
+    const clearSilenceTimer = () => {
+      if (silenceTimerRef.current !== null) {
+        clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+      }
+    };
+
+    /**
+     * 语音开始回调：重置静默计时器
+     */
+    recognition.onspeechstart = () => {
+      clearSilenceTimer();
+    };
+
+    /**
+     * 语音结束回调：启动静默计时器，超时后自动停止
+     */
+    recognition.onspeechend = () => {
+      clearSilenceTimer();
+      silenceTimerRef.current = setTimeout(() => {
+        if (mountedRef.current && isListeningRef.current) {
+          isListeningRef.current = false;
+          recognition.stop();
+          setState('idle');
+        }
+      }, silenceTimeout);
+    };
+
+    /**
      * 错误回调
      * no-speech 视为正常静默，其他错误记录并展示
      */
@@ -199,7 +234,7 @@ export default function useSTT(options: UseSTTOptions = {}): UseSTTReturn {
     };
 
     return recognition;
-  }, [lang, continuous]);
+  }, [lang, continuous, silenceTimeout]);
 
   /**
    * 开始监听语音
@@ -241,6 +276,10 @@ export default function useSTT(options: UseSTTOptions = {}): UseSTTReturn {
    */
   const stop = useCallback(() => {
     isListeningRef.current = false;
+    if (silenceTimerRef.current !== null) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
     if (recognitionRef.current) {
       recognitionRef.current.stop();
     }
@@ -254,6 +293,10 @@ export default function useSTT(options: UseSTTOptions = {}): UseSTTReturn {
    */
   const abort = useCallback(() => {
     isListeningRef.current = false;
+    if (silenceTimerRef.current !== null) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
     if (recognitionRef.current) {
       recognitionRef.current.abort();
     }
@@ -274,6 +317,10 @@ export default function useSTT(options: UseSTTOptions = {}): UseSTTReturn {
     return () => {
       mountedRef.current = false;
       isListeningRef.current = false;
+      if (silenceTimerRef.current !== null) {
+        clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+      }
       if (recognitionRef.current) {
         recognitionRef.current.abort();
       }
