@@ -112,3 +112,53 @@ export class FrameSampler {
     this.lastSampleTime = 0;
   }
 }
+
+/**
+ * 计算两帧之间的像素差异度
+ *
+ * 逐像素比较两帧 RGB 通道的差值，归一化到 0-1 范围。
+ * 使用降采样策略（每 N 个像素采样 1 次）平衡精度与性能。
+ *
+ * 典型用途：端云协同调度器用此函数判断画面是否显著变化，
+ * 若差异度 < 阈值（如 0.1）则跳过云端上传，节省 API 调用成本。
+ *
+ * @param frameA - 前一帧的 ImageData
+ * @param frameB - 当前帧的 ImageData
+ * @param sampleStep - 采样步长，默认 4（每 4 像素比较 1 次）
+ * @returns 差异度 0-1，0 表示完全相同，1 表示完全不同
+ * @throws 若两帧尺寸不一致则抛出错误
+ */
+export function frameDifference(
+  frameA: ImageData,
+  frameB: ImageData,
+  sampleStep = 4,
+): number {
+  // 尺寸必须一致
+  if (
+    frameA.width !== frameB.width ||
+    frameA.height !== frameB.height
+  ) {
+    throw new Error(
+      `帧尺寸不一致：${frameA.width}×${frameA.height} vs ${frameB.width}×${frameB.height}`,
+    );
+  }
+
+  const dataA = frameA.data;
+  const dataB = frameB.data;
+  const step = sampleStep * 4; // RGBA 每个像素 4 个通道
+
+  let totalDiff = 0;
+  let sampleCount = 0;
+
+  // 降采样比较：每隔 step 个字节比较一次 RGB 三通道
+  for (let i = 0; i < dataA.length; i += step) {
+    const rDiff = Math.abs(dataA[i] - dataB[i]);
+    const gDiff = Math.abs(dataA[i + 1] - dataB[i + 1]);
+    const bDiff = Math.abs(dataA[i + 2] - dataB[i + 2]);
+    // RGB 差异取均值归一化到 0-1
+    totalDiff += (rDiff + gDiff + bDiff) / (3 * 255);
+    sampleCount++;
+  }
+
+  return Math.min(1, totalDiff / Math.max(1, sampleCount));
+}
