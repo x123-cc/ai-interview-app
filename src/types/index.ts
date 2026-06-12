@@ -191,6 +191,37 @@ export interface UseTTSReturn {
   resume: () => void;
 }
 
+/** 面试题型 */
+export type QuestionType = 'technical' | 'behavioral' | 'case';
+
+/** 题目难度 */
+export type QuestionDifficulty = 'easy' | 'medium' | 'hard';
+
+/** 面试题目 */
+export interface Question {
+  id: string;
+  type: QuestionType;
+  difficulty: QuestionDifficulty;
+  category: string;
+  tags: string[];
+  text: string;
+  expectedPoints: string[];
+  followUpHints: string[];
+}
+
+/** 题库 */
+export interface QuestionBank {
+  questions: Question[];
+}
+
+/** 筛选条件 */
+export interface QuestionFilter {
+  type?: QuestionType;
+  difficulty?: QuestionDifficulty;
+  tags?: string[];
+  excludeIds?: string[];
+}
+
 /** LLM 消息角色 */
 export type LLMRole = 'system' | 'user' | 'assistant';
 
