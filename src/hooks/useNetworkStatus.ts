@@ -44,10 +44,9 @@ export default function useNetworkStatus(): UseNetworkStatusReturn {
      * 从 Network Information API 读取连接类型
      */
     const updateConnectionType = () => {
-      const connection =
-        (navigator as Record<string, unknown>).connection as
-          | { effectiveType?: string }
-          | undefined;
+      const connection = (
+        navigator as unknown as Record<string, unknown>
+      ).connection as { effectiveType?: string } | undefined;
       if (connection?.effectiveType) {
         setConnectionType(
           connection.effectiveType as ConnectionType,
@@ -65,8 +64,9 @@ export default function useNetworkStatus(): UseNetworkStatusReturn {
     window.addEventListener('offline', handleOffline);
 
     // Network Information API 的 change 事件
-    const connection = (navigator as Record<string, unknown>)
-      .connection as EventTarget | undefined;
+    const connection = (
+      navigator as unknown as Record<string, unknown>
+    ).connection as EventTarget | undefined;
     if (connection) {
       connection.addEventListener('change', updateConnectionType);
     }
