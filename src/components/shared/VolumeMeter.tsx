@@ -32,9 +32,8 @@ export default function VolumeMeter({ level, isActive }: VolumeMeterProps) {
   const barColor = getColorClass(clampedLevel, isActive);
 
   return (
-    <div className="flex items-center gap-2">
-      {/* 柱状条容器 */}
-      <div className="h-3 flex-1 overflow-hidden rounded-full bg-gray-200">
+    <div className="flex items-center gap-2" style={{ width: 80 }}>
+      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#e8e8ed]">
         <div
           className={`h-full rounded-full transition-all duration-150 ease-out ${barColor}`}
           style={{ width: `${clampedLevel}%` }}
@@ -45,9 +44,7 @@ export default function VolumeMeter({ level, isActive }: VolumeMeterProps) {
           aria-label={`当前音量 ${clampedLevel}%`}
         />
       </div>
-
-      {/* 音量数值 */}
-      <span className="w-10 text-right text-xs text-gray-500 select-none">
+      <span className="w-8 text-right text-[0.6875rem] text-[#86868b] select-none tabular-nums">
         {clampedLevel}%
       </span>
     </div>
