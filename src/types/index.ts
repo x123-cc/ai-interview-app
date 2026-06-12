@@ -141,12 +141,38 @@ export interface TTSVoiceOptions {
   lang?: string;
 }
 
+/** TTS 语音信息 */
+export interface TTSVoiceInfo {
+  /** 语音唯一标识 */
+  voiceURI: string;
+  /** 语音名称 */
+  name: string;
+  /** 语言代码 */
+  lang: string;
+  /** 是否为本地语音（非远程合成） */
+  localService: boolean;
+}
+
 /** useTTS Hook 返回值 */
 export interface UseTTSReturn {
   /** 当前播放状态 */
   state: TTSState;
   /** 是否支持语音合成 */
   isSupported: boolean;
+  /** 可用语音列表 */
+  voices: TTSVoiceInfo[];
+  /** 当前激活的语音 URI */
+  activeVoiceURI: string | null;
+  /** 设置激活的语音 */
+  setVoice: (voiceURI: string) => void;
+  /** 当前语速 */
+  rate: number;
+  /** 设置语速 0.5-2.0 */
+  setRate: (rate: number) => void;
+  /** 当前音调 */
+  pitch: number;
+  /** 设置音调 0.5-2.0 */
+  setPitch: (pitch: number) => void;
   /** 播报指定文本（加入队列尾部） */
   speak: (text: string, options?: TTSVoiceOptions) => void;
   /** 批量播报多段文本 */
