@@ -122,3 +122,37 @@ export interface UseSTTReturn {
   /** 取消监听并丢弃当前结果 */
   abort: () => void;
 }
+
+/** 语音合成状态 */
+export type TTSState =
+  | 'idle'        // 空闲，无语音在播放
+  | 'speaking'    // 正在播放语音
+  | 'paused';     // 播放已暂停
+
+/** TTS 语音选项 */
+export interface TTSVoiceOptions {
+  /** 语速 0.5-2.0，默认 1.0 */
+  rate?: number;
+  /** 音调 0.5-2.0，默认 1.0 */
+  pitch?: number;
+  /** 音量 0-1，默认 1.0 */
+  volume?: number;
+  /** 语言代码，默认 'zh-CN' */
+  lang?: string;
+}
+
+/** useTTS Hook 返回值 */
+export interface UseTTSReturn {
+  /** 当前播放状态 */
+  state: TTSState;
+  /** 是否支持语音合成 */
+  isSupported: boolean;
+  /** 播报指定文本 */
+  speak: (text: string, options?: TTSVoiceOptions) => void;
+  /** 停止所有语音并清空队列 */
+  stop: () => void;
+  /** 暂停当前语音 */
+  pause: () => void;
+  /** 恢复暂停的语音 */
+  resume: () => void;
+}
