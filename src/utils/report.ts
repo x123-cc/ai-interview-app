@@ -1,4 +1,4 @@
-import type { InterviewScores, ScoreDimension } from './scoring';
+import type { InterviewScores } from './scoring';
 import type { CostEntry } from './cost';
 
 /** 面试报告 */
