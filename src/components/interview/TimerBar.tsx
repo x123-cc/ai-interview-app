@@ -32,14 +32,14 @@ export default function TimerBar({
 }: TimerBarProps) {
   const progress = total > 0 ? (remaining / total) * 100 : 100;
 
-  let barColor = 'bg-blue-500';
-  if (isTimeout) barColor = 'bg-red-600';
-  else if (remaining <= 10) barColor = 'bg-red-500 animate-pulse';
-  else if (isWarning) barColor = 'bg-orange-500';
+  let barColor = 'bg-[#0071e3]';
+  if (isTimeout) barColor = 'bg-[#ff3b30]';
+  else if (remaining <= 10) barColor = 'bg-[#ff3b30] animate-pulse';
+  else if (isWarning) barColor = 'bg-[#ff9500]';
 
   return (
     <div className="flex items-center gap-3">
-      <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-200">
+      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#e8e8ed]">
         <div
           className={`h-full rounded-full transition-all duration-1000 ease-linear ${barColor}`}
           style={{ width: `${progress}%` }}
@@ -50,14 +50,14 @@ export default function TimerBar({
         />
       </div>
       <span
-        className={`min-w-[4rem] text-right text-sm font-mono font-medium ${
+        className={`min-w-[3.5rem] text-right text-[0.8125rem] font-medium tabular-nums tracking-tight ${
           isTimeout
-            ? 'text-red-600'
+            ? 'text-[#ff3b30]'
             : remaining <= 10
-              ? 'text-red-500'
+              ? 'text-[#ff3b30]'
               : isWarning
-                ? 'text-orange-600'
-                : 'text-gray-600'
+                ? 'text-[#ff9500]'
+                : 'text-[#86868b]'
         }`}
       >
         {formatTime(remaining)}

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { INTERVIEW_TYPE_LABELS } from '@/config/prompts';
+import { useNavigate } from 'react-router-dom';
+import type { HistoryRecord } from '@/types';
 import TrendChart from '@/components/history/TrendChart';
 import {
   calculateTrend,
@@ -7,16 +8,7 @@ import {
   generateSuggestions,
 } from '@/utils/analytics';
 
-interface HistoryEntry {
-  id: string;
-  date: string;
-  type: string;
-  score: number;
-  duration: number;
-  preview: string;
-}
-
-function loadHistory(): HistoryEntry[] {
+function loadHistory(): HistoryRecord[] {
   try {
     const raw = localStorage.getItem('ai_interview_history');
     return raw ? JSON.parse(raw) : [];
@@ -26,48 +18,52 @@ function loadHistory(): HistoryEntry[] {
 }
 
 export default function HistoryPage() {
-  const [entries] = useState<HistoryEntry[]>(loadHistory);
+  const navigate = useNavigate();
+  const [entries] = useState<HistoryRecord[]>(loadHistory);
 
   if (entries.length === 0) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-12 text-center">
-        <h1 className="text-2xl font-semibold text-gray-900">历史记录</h1>
-        <p className="mt-8 text-gray-500">
+      <div className="mx-auto max-w-3xl px-4 py-16 text-center">
+        <h1 className="text-[2rem] font-bold tracking-[-0.022em] text-[#1d1d1f]">历史记录</h1>
+        <p className="mt-8 text-[#86868b]">
           还没有面试记录，开始你的第一次模拟面试吧。
         </p>
       </div>
     );
   }
 
-  const scores = entries.map((e) => e.score);
-  const trend = calculateTrend(scores);
+  const scores = entries
+    .filter((e) => e.score != null)
+    .map((e) => e.score!);
+  const trend = scores.length >= 2 ? calculateTrend(scores) : null;
   const avgScore =
     scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
   const weakest = findWeakestDimension({});
   const suggestions = generateSuggestions(weakest, avgScore);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12">
-      <h1 className="text-2xl font-semibold text-gray-900">历史记录</h1>
+    <div className="mx-auto max-w-3xl px-4 py-16">
+      <h1 className="text-[2rem] font-bold tracking-[-0.022em] text-[#1d1d1f]">历史记录</h1>
 
       {/* 趋势分析 */}
-      {entries.length >= 2 && (
-        <div className="mt-6 rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-medium text-gray-700">评分趋势</h2>
+      {entries.length >= 2 && trend && (
+        <div className="apple-card mt-6 p-5">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="text-[0.875rem] font-semibold tracking-tight text-[#1d1d1f]">评分趋势</h2>
             <span
-              className={`text-sm font-medium ${trend.direction === 'rising' ? 'text-green-600' : trend.direction === 'falling' ? 'text-red-600' : 'text-gray-500'}`}
+              className={`text-[0.8125rem] font-medium ${
+                trend.direction === 'rising'
+                  ? 'text-[#34c759]'
+                  : trend.direction === 'falling'
+                    ? 'text-[#ff3b30]'
+                    : 'text-[#86868b]'
+              }`}
             >
-              {trend.label}{' '}
-              {trend.direction === 'rising'
-                ? '↑'
-                : trend.direction === 'falling'
-                  ? '↓'
-                  : '→'}
+              {trend.label} {trend.direction === 'rising' ? '↑' : trend.direction === 'falling' ? '↓' : '→'}
             </span>
           </div>
           <TrendChart scores={scores} />
-          <div className="mt-2 flex gap-4 text-xs text-gray-500">
+          <div className="mt-2 flex gap-4 text-[0.75rem] text-[#86868b]">
             <span>平均分：{avgScore.toFixed(1)}/10</span>
             <span>总次数：{entries.length}</span>
           </div>
@@ -76,9 +72,9 @@ export default function HistoryPage() {
 
       {/* 改进建议 */}
       {suggestions.length > 0 && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
-          <h3 className="text-sm font-medium text-amber-800">改进建议</h3>
-          <ul className="mt-1 list-disc pl-5 text-sm text-amber-700">
+        <div className="apple-card mt-4 border-[#ff9500]/20 bg-[#ff9500]/5 p-5">
+          <h3 className="text-[0.875rem] font-semibold tracking-tight text-[#1d1d1f]">改进建议</h3>
+          <ul className="mt-2 list-disc space-y-0.5 pl-5 text-[0.8125rem] text-[#1d1d1f]/70">
             {suggestions.map((s, i) => (
               <li key={i}>{s}</li>
             ))}
@@ -86,44 +82,56 @@ export default function HistoryPage() {
         </div>
       )}
 
-      <div className="mt-6 space-y-4">
-        {entries.map((entry) => (
-          <div
-            key={entry.id}
-            className="rounded-lg border border-gray-200 p-4 transition-colors hover:border-gray-300"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-sm text-gray-500">{entry.date}</span>
-                <span className="ml-3 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                  {INTERVIEW_TYPE_LABELS[
-                    entry.type as keyof typeof INTERVIEW_TYPE_LABELS
-                  ] ?? entry.type}
-                </span>
+      {/* 记录列表 */}
+      <div className="mt-6 space-y-3">
+        {entries.map((entry) => {
+          const date = new Date(entry.date);
+          const dateStr = date.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
+          const timeStr = date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+          const durationMin = Math.floor(entry.duration / 60);
+          const durationSec = entry.duration % 60;
+          const msgCount = entry.transcript?.length ?? 0;
+
+          return (
+            <button
+              key={entry.id}
+              onClick={() => navigate(`/history/${entry.id}`)}
+              className="apple-card apple-card-hover w-full p-5 text-left"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <h3 className="text-[0.9375rem] font-semibold tracking-tight text-[#1d1d1f]">
+                    {entry.title || '未命名面试'}
+                  </h3>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[0.75rem] text-[#86868b]">
+                    <span>{dateStr} {timeStr}</span>
+                    <span>·</span>
+                    <span>时长 {durationMin} 分 {durationSec} 秒</span>
+                    <span>·</span>
+                    <span>{msgCount} 条对话</span>
+                    <span className="rounded-full bg-[#e8e8ed] px-2 py-0.5 text-[0.6875rem] text-[#1d1d1f]">
+                      {entry.mode === 'review' ? '复盘' : '面试'}
+                    </span>
+                    {entry.score != null && (
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[0.6875rem] font-medium ${
+                          entry.score >= 7
+                            ? 'bg-[#34c759]/10 text-[#34c759]'
+                            : entry.score >= 4
+                              ? 'bg-[#ff9500]/10 text-[#ff9500]'
+                              : 'bg-[#ff3b30]/10 text-[#ff3b30]'
+                        }`}
+                      >
+                        {entry.score}/10
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <span className="text-lg text-[#aeaeb2]">→</span>
               </div>
-              <div className="text-right">
-                <span
-                  className={`text-2xl font-bold ${
-                    entry.score >= 7
-                      ? 'text-green-600'
-                      : entry.score >= 4
-                        ? 'text-yellow-600'
-                        : 'text-red-600'
-                  }`}
-                >
-                  {entry.score}
-                </span>
-                <span className="text-sm text-gray-400">/10</span>
-              </div>
-            </div>
-            <p className="mt-2 text-sm text-gray-600 line-clamp-2">
-              {entry.preview}
-            </p>
-            <div className="mt-2 text-xs text-gray-400">
-              时长：{Math.floor(entry.duration / 60)}分{entry.duration % 60}秒
-            </div>
-          </div>
-        ))}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
