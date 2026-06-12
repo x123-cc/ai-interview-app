@@ -1,6 +1,9 @@
 import { useState, useRef, useCallback } from 'react';
+import CameraView from '@/components/camera/CameraView';
+import CameraStatus from '@/components/camera/CameraStatus';
 import VolumeMeter from '@/components/shared/VolumeMeter';
 import TimerBar from '@/components/interview/TimerBar';
+import useCamera from '@/hooks/useCamera';
 import useAudioCapture from '@/hooks/useAudioCapture';
 import useSTT from '@/hooks/useSTT';
 import useTTS from '@/hooks/useTTS';
@@ -17,6 +20,7 @@ export default function InterviewPage() {
   const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const camera = useCamera();
   const audio = useAudioCapture();
   const stt = useSTT({ silenceTimeout: 1500 });
   const tts = useTTS();
@@ -112,6 +116,19 @@ export default function InterviewPage() {
               className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">发送</button>
           </div>
         </div>
+      </div>
+
+      {/* 右侧：摄像头面板 */}
+      <div className="ml-4 flex w-64 flex-col gap-2">
+        <div className="overflow-hidden rounded-lg border border-gray-200 bg-black">
+          <CameraView stream={camera.stream} mirrored className="aspect-[4/3]" />
+        </div>
+        <CameraStatus state={camera.state} error={camera.error} onRetry={() => camera.start()} />
+        {camera.state === 'idle' && (
+          <button onClick={() => camera.start()} className="rounded-lg bg-blue-600 py-2 text-sm font-medium text-white hover:bg-blue-700">
+            开启摄像头
+          </button>
+        )}
       </div>
     </div>
   );
