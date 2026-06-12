@@ -25,7 +25,7 @@ export default function InterviewPage() {
   const stt = useSTT({ silenceTimeout: 1500 });
   const tts = useTTS();
   const timer = useTimer(120);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const _videoRef = useRef<HTMLVideoElement | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -61,17 +61,6 @@ export default function InterviewPage() {
       tts.speak(reply);
     }, 1000);
   }, [inputText, addMessage, tts]);
-
-  // 语音识别结果处理
-  const handleSTTResult = useCallback(() => {
-    if (stt.transcript) {
-      addMessage('user', stt.transcript);
-      setMessages((prev) => {
-        const updated = [...prev];
-        return updated;
-      });
-    }
-  }, [stt.transcript, addMessage]);
 
   return (
     <div className="flex h-[calc(100vh-8rem)] gap-4 p-4">
