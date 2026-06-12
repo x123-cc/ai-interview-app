@@ -134,10 +134,7 @@ export function frameDifference(
   sampleStep = 4,
 ): number {
   // 尺寸必须一致
-  if (
-    frameA.width !== frameB.width ||
-    frameA.height !== frameB.height
-  ) {
+  if (frameA.width !== frameB.width || frameA.height !== frameB.height) {
     throw new Error(
       `帧尺寸不一致：${frameA.width}×${frameA.height} vs ${frameB.width}×${frameB.height}`,
     );
