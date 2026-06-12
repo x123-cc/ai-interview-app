@@ -188,6 +188,24 @@ export class InterviewAI {
     this.systemPrompt = buildSystemPrompt(config);
   }
 
+  /**
+   * 从已有对话历史恢复状态（继续未完成的面试）
+   */
+  resumeFrom(transcript: ChatMessage[]): string {
+    // 恢复对话历史
+    for (const msg of transcript) {
+      const role = msg.role === 'user' ? 'user' : 'assistant';
+      this.conversation.push({ role, text: msg.text });
+    }
+    // 估算当前题号
+    const questionCount = transcript.filter(
+      (m) => m.role === 'interviewer' && m.text.includes('?')
+    ).length;
+    this.questionNumber = Math.max(1, questionCount);
+
+    return `面试继续。刚才我们进行到第 ${this.questionNumber} 个问题。请根据之前的对话上下文，继续问我下一个问题。先做一个简短回顾，然后继续提问。`;
+  }
+
   /** 获取开场白 */
   getWelcomeMessage(): string {
     const name = this.config.mode === 'review' ? '复盘面试' : '模拟面试';

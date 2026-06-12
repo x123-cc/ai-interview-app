@@ -11,6 +11,7 @@ import useTimer from '@/hooks/useTimer';
 import { InterviewAI } from '@/services/interview-ai';
 import type { VisionAnalysis } from '@/services/interview-ai';
 import { createLLMClient } from '@/services/llm';
+import { getProviderConfig } from '@/config/providers';
 import type { ChatMessage, HistoryRecord } from '@/types';
 
 /** 从 camera stream 中抓取一帧 base64 */
@@ -45,10 +46,13 @@ export default function InterviewPage() {
     questions?: string[];
     context?: string;
     duration?: number;
+    /** 继续面试：已有的逐字稿 */
+    resumeFrom?: ChatMessage[];
   } | null;
 
   const configuredDuration = state?.duration ?? 900;
   const isReviewMode = state?.mode === 'review';
+  const isResume = !!state?.resumeFrom?.length;
 
   // ── State ──
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -80,15 +84,8 @@ export default function InterviewPage() {
     }
     setApiReady(true);
 
-    const provider = localStorage.getItem('ai_interview_provider') || 'openai';
-    const baseUrl =
-      provider === 'anthropic'
-        ? 'https://api.anthropic.com/v1'
-        : provider === 'custom'
-          ? localStorage.getItem('ai_interview_base_url') || ''
-          : '';
-
-    const llmClient = createLLMClient({ apiKey, baseUrl });
+    const providerConfig = getProviderConfig();
+    const llmClient = createLLMClient({ apiKey, baseUrl: providerConfig.baseUrl });
 
     aiRef.current = new InterviewAI({
       llmClient,
@@ -99,14 +96,26 @@ export default function InterviewPage() {
       mode: state?.mode ?? 'interview',
     });
 
-    // 发送开场白
-    const welcome = aiRef.current.getWelcomeMessage();
-    setMessages([{
-      role: 'interviewer',
-      text: welcome,
-      timestamp: Date.now(),
-    }]);
-    tts.speak(welcome);
+    // 继续面试 or 新面试
+    if (isResume && state?.resumeFrom) {
+      const resumeText = aiRef.current.resumeFrom(state.resumeFrom);
+      setMessages([
+        ...state.resumeFrom,
+        { role: 'interviewer' as const, text: resumeText, timestamp: Date.now() },
+      ]);
+      tts.speak(resumeText);
+      // 继续时计时器直接启动
+      timerStartedRef.current = true;
+      timer.start();
+    } else {
+      const welcome = aiRef.current.getWelcomeMessage();
+      setMessages([{
+        role: 'interviewer',
+        text: welcome,
+        timestamp: Date.now(),
+      }]);
+      tts.speak(welcome);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

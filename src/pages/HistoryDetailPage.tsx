@@ -44,16 +44,10 @@ export default function HistoryDetailPage() {
     setGenError(null);
 
     try {
-      const provider = localStorage.getItem('ai_interview_provider') || 'openai';
-      const baseUrl =
-        provider === 'anthropic'
-          ? 'https://api.anthropic.com/v1'
-          : provider === 'custom'
-            ? localStorage.getItem('ai_interview_base_url') || ''
-            : '';
-
+      const { getProviderConfig: getConfig } = await import('@/config/providers');
+      const providerCfg = getConfig();
       const { createLLMClient } = await import('@/services/llm');
-      const llm = createLLMClient({ apiKey, baseUrl });
+      const llm = createLLMClient({ apiKey, baseUrl: providerCfg.baseUrl });
 
       // 提取面试官问题
       const questions = record.transcript
@@ -136,6 +130,11 @@ ${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}`;
   const durationMin = Math.floor(record.duration / 60);
   const durationSec = record.duration % 60;
 
+  // 判断面试是否已完成
+  const lastMessages = record.transcript.slice(-3).map((m) => m.text).join(' ');
+  const isComplete = /面试结束|感谢.*参与|本次面试.*完成|goodbye|thank you.*interview/i.test(lastMessages);
+  const isTimedOut = record.duration >= record.setDuration && record.setDuration > 0;
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-16">
       <button onClick={() => navigate('/history')} className="mb-6 text-[0.8125rem] text-[#86868b] hover:text-[#1d1d1f] transition-colors">
@@ -160,6 +159,48 @@ ${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}`;
             <span className="font-medium text-[#0071e3]">评分 {record.score}/10</span>
           )}
         </div>
+      </div>
+
+      {/* 再次面试 */}
+      <div className="mb-10 flex items-center gap-3">
+        {(!isComplete && !isTimedOut) ? (
+          <button
+            onClick={() => navigate('/interview', {
+              state: {
+                mode: record.mode,
+                resume: record.resume || '',
+                jd: record.jd,
+                questions: record.questions,
+                duration: Math.max(60, record.setDuration - record.duration),
+                resumeFrom: record.transcript,
+                context: record.questions ? record.questions.join('\n') : undefined,
+              },
+            })}
+            className="apple-btn-primary"
+          >
+            继续面试
+          </button>
+        ) : (
+          <button
+            onClick={() => navigate('/interview', {
+              state: {
+                mode: record.mode,
+                resume: record.resume || '',
+                jd: record.jd,
+                questions: record.questions,
+                duration: record.setDuration || 900,
+              },
+            })}
+            className="apple-btn-primary"
+          >
+            再次面试
+          </button>
+        )}
+        <p className="text-[0.75rem] text-[#86868b]">
+          {(!isComplete && !isTimedOut)
+            ? '该面试未完成，将继续之前的对话'
+            : '使用相同配置重新开始面试'}
+        </p>
       </div>
 
       {/* 逐字稿 */}

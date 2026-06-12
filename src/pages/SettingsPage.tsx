@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { getBrowserCapabilities } from '@/utils/browser';
+import { PROVIDER_OPTIONS, detectProviderByKey, type LLMProvider } from '@/config/providers';
 
 export default function SettingsPage() {
   const [apiKey, setApiKey] = useState(
     () => localStorage.getItem('ai_interview_api_key') || '',
   );
-  const [provider, setProvider] = useState(
-    () => localStorage.getItem('ai_interview_provider') || 'openai',
+  const [provider, setProvider] = useState<LLMProvider>(
+    () => (localStorage.getItem('ai_interview_provider') || 'openai') as LLMProvider,
+  );
+  const [customBaseUrl, setCustomBaseUrl] = useState(
+    () => localStorage.getItem('ai_interview_base_url') || '',
   );
   const [autoSave, setAutoSave] = useState(
     () => localStorage.getItem('ai_interview_auto_save') === 'true',
@@ -18,9 +22,15 @@ export default function SettingsPage() {
   const handleSave = () => {
     localStorage.setItem('ai_interview_api_key', apiKey);
     localStorage.setItem('ai_interview_provider', provider);
+    if (provider === 'custom') {
+      localStorage.setItem('ai_interview_base_url', customBaseUrl);
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
+
+  // Key 前缀提示
+  const detectedProvider = detectProviderByKey(apiKey);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-16">
@@ -35,14 +45,29 @@ export default function SettingsPage() {
           </label>
           <select
             value={provider}
-            onChange={(e) => setProvider(e.target.value)}
+            onChange={(e) => setProvider(e.target.value as LLMProvider)}
             className="apple-input mt-1.5 w-full"
           >
-            <option value="openai">OpenAI</option>
-            <option value="anthropic">Anthropic (Claude)</option>
-            <option value="custom">自定义端点</option>
+            {PROVIDER_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
           </select>
         </div>
+        {/* 自定义端点 URL */}
+        {provider === 'custom' && (
+          <div className="mt-4">
+            <label className="text-[0.8125rem] font-medium tracking-tight text-[#1d1d1f]">
+              自定义端点 URL
+            </label>
+            <input
+              type="text"
+              value={customBaseUrl}
+              onChange={(e) => setCustomBaseUrl(e.target.value)}
+              placeholder="https://your-api.com/v1"
+              className="apple-input mt-1.5 w-full"
+            />
+          </div>
+        )}
         <div className="mt-4">
           <label className="text-[0.8125rem] font-medium tracking-tight text-[#1d1d1f]">
             API Key
@@ -54,6 +79,11 @@ export default function SettingsPage() {
             placeholder="sk-..."
             className="apple-input mt-1.5 w-full"
           />
+          {detectedProvider && detectedProvider !== provider && (
+            <p className="mt-1.5 text-[0.75rem] text-[#ff9500]">
+              Key 前缀匹配到 {detectedProvider}，当前选择的是 {provider}，可能不兼容
+            </p>
+          )}
         </div>
         <button onClick={handleSave} className="apple-btn-primary mt-5">
           {saved ? '已保存 ✓' : '保存'}

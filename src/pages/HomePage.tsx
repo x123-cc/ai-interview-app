@@ -5,6 +5,7 @@ import mammoth from 'mammoth';
 import type { InterviewMode, ReviewSourceType } from '@/types';
 import { parseReviewFileContent, extractQuestions } from '@/services/review-parser';
 import { createLLMClient } from '@/services/llm';
+import { getProviderConfig } from '@/config/providers';
 
 // 配置 PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
@@ -179,16 +180,10 @@ export default function HomePage() {
       setParseStatus('loading');
 
       const apiKey = localStorage.getItem('ai_interview_api_key') || '';
-      const provider = localStorage.getItem('ai_interview_provider') || 'openai';
-      const baseUrl =
-        provider === 'anthropic'
-          ? 'https://api.anthropic.com/v1'
-          : provider === 'custom'
-            ? localStorage.getItem('ai_interview_base_url') || ''
-            : '';
+      const providerConfig = getProviderConfig();
 
       try {
-        const llmClient = createLLMClient({ apiKey, baseUrl });
+        const llmClient = createLLMClient({ apiKey, baseUrl: providerConfig.baseUrl });
         const questions = await extractQuestions(reviewText.trim(), llmClient);
         setParsedQuestions(questions);
         setParsedContext(reviewText.trim());
@@ -222,15 +217,9 @@ export default function HomePage() {
       setParsedContext(text);
 
       // Step 2: 使用 LLM 提取面试问题
-      const provider = localStorage.getItem('ai_interview_provider') || 'openai';
-      const baseUrl =
-        provider === 'anthropic'
-          ? 'https://api.anthropic.com/v1'
-          : provider === 'custom'
-            ? localStorage.getItem('ai_interview_base_url') || ''
-            : '';
+      const providerConfig2 = getProviderConfig();
 
-      const llmClient = createLLMClient({ apiKey, baseUrl });
+      const llmClient = createLLMClient({ apiKey, baseUrl: providerConfig2.baseUrl });
       const questions = await extractQuestions(text, llmClient);
 
       setParsedQuestions(questions);
