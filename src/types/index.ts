@@ -131,9 +131,9 @@ export interface UseSTTReturn {
 
 /** 语音合成状态 */
 export type TTSState =
-  | 'idle'        // 空闲，无语音在播放
-  | 'speaking'    // 正在播放语音
-  | 'paused';     // 播放已暂停
+  | 'idle' // 空闲，无语音在播放
+  | 'speaking' // 正在播放语音
+  | 'paused'; // 播放已暂停
 
 /** TTS 语音选项 */
 export interface TTSVoiceOptions {

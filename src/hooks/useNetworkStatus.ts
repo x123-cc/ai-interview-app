@@ -44,13 +44,10 @@ export default function useNetworkStatus(): UseNetworkStatusReturn {
      * 从 Network Information API 读取连接类型
      */
     const updateConnectionType = () => {
-      const connection = (
-        navigator as unknown as Record<string, unknown>
-      ).connection as { effectiveType?: string } | undefined;
+      const connection = (navigator as unknown as Record<string, unknown>)
+        .connection as { effectiveType?: string } | undefined;
       if (connection?.effectiveType) {
-        setConnectionType(
-          connection.effectiveType as ConnectionType,
-        );
+        setConnectionType(connection.effectiveType as ConnectionType);
       }
     };
 
@@ -64,9 +61,8 @@ export default function useNetworkStatus(): UseNetworkStatusReturn {
     window.addEventListener('offline', handleOffline);
 
     // Network Information API 的 change 事件
-    const connection = (
-      navigator as unknown as Record<string, unknown>
-    ).connection as EventTarget | undefined;
+    const connection = (navigator as unknown as Record<string, unknown>)
+      .connection as EventTarget | undefined;
     if (connection) {
       connection.addEventListener('change', updateConnectionType);
     }
@@ -75,10 +71,7 @@ export default function useNetworkStatus(): UseNetworkStatusReturn {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       if (connection) {
-        connection.removeEventListener(
-          'change',
-          updateConnectionType,
-        );
+        connection.removeEventListener('change', updateConnectionType);
       }
     };
   }, []);

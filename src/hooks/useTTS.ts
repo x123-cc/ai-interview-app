@@ -70,18 +70,15 @@ export default function useTTS(): UseTTSReturn {
   /**
    * 设置激活的语音
    */
-  const setVoice = useCallback(
-    (voiceURI: string) => {
-      // 验证语音 URI 是否有效
-      const exists = window.speechSynthesis
-        .getVoices()
-        .some((v) => v.voiceURI === voiceURI);
-      if (exists) {
-        setActiveVoiceURI(voiceURI);
-      }
-    },
-    [],
-  );
+  const setVoice = useCallback((voiceURI: string) => {
+    // 验证语音 URI 是否有效
+    const exists = window.speechSynthesis
+      .getVoices()
+      .some((v) => v.voiceURI === voiceURI);
+    if (exists) {
+      setActiveVoiceURI(voiceURI);
+    }
+  }, []);
 
   /**
    * 设置语速（0.5-2.0）
@@ -233,10 +230,7 @@ export default function useTTS(): UseTTSReturn {
     window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
     return () => {
       clearTimeout(timer);
-      window.speechSynthesis.removeEventListener(
-        'voiceschanged',
-        loadVoices,
-      );
+      window.speechSynthesis.removeEventListener('voiceschanged', loadVoices);
     };
   }, [isSupported, loadVoices]);
 

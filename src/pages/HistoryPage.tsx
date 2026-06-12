@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { INTERVIEW_TYPE_LABELS } from '@/config/prompts';
 import TrendChart from '@/components/history/TrendChart';
-import { calculateTrend, findWeakestDimension, generateSuggestions } from '@/utils/analytics';
+import {
+  calculateTrend,
+  findWeakestDimension,
+  generateSuggestions,
+} from '@/utils/analytics';
 
 interface HistoryEntry {
   id: string;
@@ -28,14 +32,17 @@ export default function HistoryPage() {
     return (
       <div className="mx-auto max-w-3xl px-4 py-12 text-center">
         <h1 className="text-2xl font-semibold text-gray-900">历史记录</h1>
-        <p className="mt-8 text-gray-500">还没有面试记录，开始你的第一次模拟面试吧。</p>
+        <p className="mt-8 text-gray-500">
+          还没有面试记录，开始你的第一次模拟面试吧。
+        </p>
       </div>
     );
   }
 
   const scores = entries.map((e) => e.score);
   const trend = calculateTrend(scores);
-  const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+  const avgScore =
+    scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
   const weakest = findWeakestDimension({});
   const suggestions = generateSuggestions(weakest, avgScore);
 
@@ -48,8 +55,15 @@ export default function HistoryPage() {
         <div className="mt-6 rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-sm font-medium text-gray-700">评分趋势</h2>
-            <span className={`text-sm font-medium ${trend.direction === 'rising' ? 'text-green-600' : trend.direction === 'falling' ? 'text-red-600' : 'text-gray-500'}`}>
-              {trend.label} {trend.direction === 'rising' ? '↑' : trend.direction === 'falling' ? '↓' : '→'}
+            <span
+              className={`text-sm font-medium ${trend.direction === 'rising' ? 'text-green-600' : trend.direction === 'falling' ? 'text-red-600' : 'text-gray-500'}`}
+            >
+              {trend.label}{' '}
+              {trend.direction === 'rising'
+                ? '↑'
+                : trend.direction === 'falling'
+                  ? '↓'
+                  : '→'}
             </span>
           </div>
           <TrendChart scores={scores} />
@@ -65,7 +79,9 @@ export default function HistoryPage() {
         <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
           <h3 className="text-sm font-medium text-amber-800">改进建议</h3>
           <ul className="mt-1 list-disc pl-5 text-sm text-amber-700">
-            {suggestions.map((s, i) => <li key={i}>{s}</li>)}
+            {suggestions.map((s, i) => (
+              <li key={i}>{s}</li>
+            ))}
           </ul>
         </div>
       )}
@@ -80,7 +96,9 @@ export default function HistoryPage() {
               <div>
                 <span className="text-sm text-gray-500">{entry.date}</span>
                 <span className="ml-3 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                  {INTERVIEW_TYPE_LABELS[entry.type as keyof typeof INTERVIEW_TYPE_LABELS] ?? entry.type}
+                  {INTERVIEW_TYPE_LABELS[
+                    entry.type as keyof typeof INTERVIEW_TYPE_LABELS
+                  ] ?? entry.type}
                 </span>
               </div>
               <div className="text-right">

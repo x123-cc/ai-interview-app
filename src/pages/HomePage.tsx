@@ -35,9 +35,7 @@ export default function HomePage() {
 
       {/* 面试类型选择 */}
       <div className="mb-8">
-        <h2 className="mb-4 text-lg font-medium text-gray-800">
-          选择面试类型
-        </h2>
+        <h2 className="mb-4 text-lg font-medium text-gray-800">选择面试类型</h2>
         <div className="grid grid-cols-3 gap-4">
           {types.map((type) => (
             <button

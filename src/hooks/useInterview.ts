@@ -1,5 +1,10 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { InterviewEngine, type InterviewStage, type InterviewContext, type InterviewEngineConfig } from '@/services/interview-engine';
+import {
+  InterviewEngine,
+  type InterviewStage,
+  type InterviewContext,
+  type InterviewEngineConfig,
+} from '@/services/interview-engine';
 import type { Question } from '@/types';
 
 /** useInterview 返回值 */
@@ -37,10 +42,14 @@ export interface UseInterviewReturn {
 export default function useInterview(
   config: InterviewEngineConfig,
 ): UseInterviewReturn {
-  const engineRef = useRef(new InterviewEngine(config));
+  const [engine] = useState(() => new InterviewEngine(config));
+  const engineRef = useRef(engine);
+  useEffect(() => {
+    engineRef.current = engine;
+  }, [engine]);
   const [stage, setStage] = useState<InterviewStage>('idle');
-  const [context, setContext] = useState<InterviewContext>(
-    engineRef.current.getContext(),
+  const [context, setContext] = useState<InterviewContext>(() =>
+    engine.getContext(),
   );
 
   /** 同步状态到 React */
@@ -78,8 +87,7 @@ export default function useInterview(
    */
   const continueToNext = useCallback(async () => {
     const ctx = engineRef.current.getContext();
-    const isLast =
-      ctx.currentQuestionIndex >= ctx.totalQuestions - 1;
+    const isLast = ctx.currentQuestionIndex >= ctx.totalQuestions - 1;
 
     if (isLast) {
       await engineRef.current.transition('ALL_QUESTIONS_DONE');

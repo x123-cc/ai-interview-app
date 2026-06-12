@@ -172,7 +172,14 @@ export default function useSyncScheduler(
       mountedRef.current = false;
       cancelAnimationFrame(rafId);
     };
-  }, [videoRef, sttState, uploadInterval, diffThreshold, localAnalysisInterval, captureAndUpload]);
+  }, [
+    videoRef,
+    sttState,
+    uploadInterval,
+    diffThreshold,
+    localAnalysisInterval,
+    captureAndUpload,
+  ]);
 
   return {
     lastUploadedFrame,

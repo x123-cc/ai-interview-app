@@ -15,7 +15,13 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'algorithms',
     tags: ['数组', '双指针'],
     text: '请解释什么是时间复杂度，并举例说明 O(n) 和 O(n²) 的区别。',
-    expectedPoints: ['时间复杂度定义', '大O表示法含义', 'O(n)示例', 'O(n²)示例', '实际场景对比'],
+    expectedPoints: [
+      '时间复杂度定义',
+      '大O表示法含义',
+      'O(n)示例',
+      'O(n²)示例',
+      '实际场景对比',
+    ],
     followUpHints: ['能否举一个你工作中遇到的例子', '空间复杂度呢'],
   },
   {
@@ -25,7 +31,13 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'fundamentals',
     tags: ['HTTP', '网络'],
     text: '请解释 HTTP 中 GET 和 POST 请求的区别，以及各自的使用场景。',
-    expectedPoints: ['语义差异', '参数传递方式', '幂等性', '缓存差异', '使用场景举例'],
+    expectedPoints: [
+      '语义差异',
+      '参数传递方式',
+      '幂等性',
+      '缓存差异',
+      '使用场景举例',
+    ],
     followUpHints: ['PUT 和 PATCH 呢', 'RESTful API 中如何选择'],
   },
   {
@@ -35,7 +47,12 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'algorithms',
     tags: ['链表', '递归'],
     text: '如何判断一个单链表是否存在环？请描述算法思路和复杂度。',
-    expectedPoints: ['快慢指针思路', '时间复杂度O(n)', '空间复杂度O(1)', '边界情况'],
+    expectedPoints: [
+      '快慢指针思路',
+      '时间复杂度O(n)',
+      '空间复杂度O(1)',
+      '边界情况',
+    ],
     followUpHints: ['如何找到环的入口点', '如果要求O(1)空间呢'],
   },
   {
@@ -45,7 +62,13 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'system-design',
     tags: ['数据库', '缓存'],
     text: '设计一个短链接系统（类似 TinyURL），请描述核心架构和数据流。',
-    expectedPoints: ['哈希算法选择', '数据库设计', '缓存策略', '并发处理', '301/302重定向'],
+    expectedPoints: [
+      '哈希算法选择',
+      '数据库设计',
+      '缓存策略',
+      '并发处理',
+      '301/302重定向',
+    ],
     followUpHints: ['如何处理哈希冲突', '如何保证高可用', '过期清理策略呢'],
   },
   {
@@ -55,7 +78,13 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'frontend',
     tags: ['React', '状态管理'],
     text: '请解释 React 中 Virtual DOM 的工作原理，以及它如何提升性能。',
-    expectedPoints: ['Virtual DOM概念', 'Diff算法', '批量更新', 'Reconciliation', '与真实DOM对比'],
+    expectedPoints: [
+      'Virtual DOM概念',
+      'Diff算法',
+      '批量更新',
+      'Reconciliation',
+      '与真实DOM对比',
+    ],
     followUpHints: ['Fiber 架构做了什么改进', 'key 的作用是什么'],
   },
   {
@@ -65,7 +94,13 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'system-design',
     tags: ['分布式', '消息队列'],
     text: '设计一个支持百万级并发的实时聊天系统。请从架构、通信协议、数据存储三个层面分析。',
-    expectedPoints: ['WebSocket vs SSE', '消息队列解耦', '数据库选型', '水平扩展', '消息可靠性'],
+    expectedPoints: [
+      'WebSocket vs SSE',
+      '消息队列解耦',
+      '数据库选型',
+      '水平扩展',
+      '消息可靠性',
+    ],
     followUpHints: ['消息已读状态如何设计', '离线消息如何处理'],
   },
   {
@@ -75,7 +110,13 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'algorithms',
     tags: ['动态规划', '优化'],
     text: '给定一个面额数组 coins 和一个总金额 amount，计算凑出该金额所需的最少硬币数。请写出递推公式并分析复杂度。',
-    expectedPoints: ['DP状态定义', '状态转移方程', '初始化', 'O(amount×coins)复杂度', '优化方向'],
+    expectedPoints: [
+      'DP状态定义',
+      '状态转移方程',
+      '初始化',
+      'O(amount×coins)复杂度',
+      '优化方向',
+    ],
     followUpHints: ['能否用贪心算法', '如果求所有组合呢'],
   },
   {
@@ -85,7 +126,13 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'database',
     tags: ['SQL', '索引'],
     text: '请解释数据库索引的作用和基本原理，以及什么时候不应该使用索引。',
-    expectedPoints: ['B+Tree结构', '查询加速原理', '索引代价', '不适用场景', '最左前缀原则'],
+    expectedPoints: [
+      'B+Tree结构',
+      '查询加速原理',
+      '索引代价',
+      '不适用场景',
+      '最左前缀原则',
+    ],
     followUpHints: ['聚簇索引和非聚簇索引的区别', '联合索引的字段顺序'],
   },
   {
@@ -95,8 +142,18 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'frontend',
     tags: ['JavaScript', '异步'],
     text: '请解释 JavaScript 的事件循环（Event Loop）机制，以及宏任务和微任务的区别。',
-    expectedPoints: ['单线程模型', '调用栈', '任务队列', '宏任务示例', '微任务示例', '执行顺序'],
-    followUpHints: ['async/await 和 Promise 的关系', 'requestAnimationFrame 属于哪种'],
+    expectedPoints: [
+      '单线程模型',
+      '调用栈',
+      '任务队列',
+      '宏任务示例',
+      '微任务示例',
+      '执行顺序',
+    ],
+    followUpHints: [
+      'async/await 和 Promise 的关系',
+      'requestAnimationFrame 属于哪种',
+    ],
   },
   {
     id: 'tech-10',
@@ -105,7 +162,13 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'system-design',
     tags: ['微服务', '容器化'],
     text: '如何将一个单体应用拆分为微服务架构？请描述拆分策略和需要注意的挑战。',
-    expectedPoints: ['DDD限界上下文', '服务粒度', '通信方式', '数据一致性', '部署和监控'],
+    expectedPoints: [
+      'DDD限界上下文',
+      '服务粒度',
+      '通信方式',
+      '数据一致性',
+      '部署和监控',
+    ],
     followUpHints: ['分布式事务如何处理', '服务间认证和授权'],
   },
 
@@ -117,7 +180,13 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'teamwork',
     tags: ['协作', '冲突'],
     text: '请描述一次你在团队中遇到冲突的经历，你是如何处理的？结果如何？',
-    expectedPoints: ['STAR四要素完整', '具体冲突描述', '主动行动', '沟通方式', '结果和反思'],
+    expectedPoints: [
+      'STAR四要素完整',
+      '具体冲突描述',
+      '主动行动',
+      '沟通方式',
+      '结果和反思',
+    ],
     followUpHints: ['如果再遇到会怎么做', '对方后来对你的反馈是什么'],
   },
   {
@@ -127,7 +196,13 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'leadership',
     tags: ['领导力', '激励'],
     text: '请举例说明你如何激励团队成员完成一个困难的目标。',
-    expectedPoints: ['明确目标', '激励方式', '具体行动', '困难克服', '最终成果'],
+    expectedPoints: [
+      '明确目标',
+      '激励方式',
+      '具体行动',
+      '困难克服',
+      '最终成果',
+    ],
     followUpHints: ['有人不配合怎么办', '这个过程中你学到了什么'],
   },
   {
@@ -137,7 +212,13 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'failure',
     tags: ['失败', '反思'],
     text: '请分享一次你工作中最大的失败经历，以及你从中学到了什么。',
-    expectedPoints: ['失败具体描述', '责任承担', '根因分析', '改进措施', '后续影响'],
+    expectedPoints: [
+      '失败具体描述',
+      '责任承担',
+      '根因分析',
+      '改进措施',
+      '后续影响',
+    ],
     followUpHints: ['如果当时有更多时间会怎么决策', '这个教训如何应用到现在'],
   },
   {
@@ -147,7 +228,13 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'leadership',
     tags: ['决策', '压力'],
     text: '请描述一次你必须在信息不完整的情况下做出重要决策的经历。',
-    expectedPoints: ['决策背景', '信息缺口', '风险评估', '决策逻辑', '结果验证'],
+    expectedPoints: [
+      '决策背景',
+      '信息缺口',
+      '风险评估',
+      '决策逻辑',
+      '结果验证',
+    ],
     followUpHints: ['事后看这个决策正确吗', '如果现在重新决策会有什么不同'],
   },
   {
@@ -157,7 +244,13 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'leadership',
     tags: ['变革', '推动'],
     text: '请描述你推动过的一次重大变革（技术或流程），你如何克服阻力的？',
-    expectedPoints: ['变革必要性', '阻力来源', '说服策略', '执行计划', '量化成果'],
+    expectedPoints: [
+      '变革必要性',
+      '阻力来源',
+      '说服策略',
+      '执行计划',
+      '量化成果',
+    ],
     followUpHints: ['有哪些意外阻力', '如何衡量变革成功'],
   },
   {
@@ -167,7 +260,13 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'teamwork',
     tags: ['沟通', '反馈'],
     text: '请举例说明你如何给同事提供有建设性的负面反馈。',
-    expectedPoints: ['情境描述', '准备过程', '沟通方式', '对方反应', '后续跟进'],
+    expectedPoints: [
+      '情境描述',
+      '准备过程',
+      '沟通方式',
+      '对方反应',
+      '后续跟进',
+    ],
     followUpHints: ['你收到过的反馈中哪种方式最有效', '如何处理防御性反应'],
   },
   {
@@ -177,7 +276,13 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'growth',
     tags: ['学习', '自我提升'],
     text: '请描述你最近自学的一项新技能，你是如何学习的，以及如何应用到工作中？',
-    expectedPoints: ['技能选择原因', '学习计划', '具体方法', '应用场景', '学习成果'],
+    expectedPoints: [
+      '技能选择原因',
+      '学习计划',
+      '具体方法',
+      '应用场景',
+      '学习成果',
+    ],
     followUpHints: ['学习过程中最大的困难是什么', '下一个学习目标'],
   },
   {
@@ -187,7 +292,13 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'failure',
     tags: ['项目', '复盘'],
     text: '请描述一个你主导但最终未能达成目标的项目。你如何复盘？',
-    expectedPoints: ['项目目标', '失败原因', '个人责任', '复盘方法', '组织学习'],
+    expectedPoints: [
+      '项目目标',
+      '失败原因',
+      '个人责任',
+      '复盘方法',
+      '组织学习',
+    ],
     followUpHints: ['团队里其他人怎么看这个失败', '对你后续项目管理有何影响'],
   },
   {
@@ -197,7 +308,13 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'teamwork',
     tags: ['协作', '多元化'],
     text: '请分享你与不同背景（文化/技术栈/职能）同事合作的经验。',
-    expectedPoints: ['差异具体描述', '理解与适应', '沟通策略', '协作成果', '个人成长'],
+    expectedPoints: [
+      '差异具体描述',
+      '理解与适应',
+      '沟通策略',
+      '协作成果',
+      '个人成长',
+    ],
     followUpHints: ['跨文化沟通有什么特别注意的', '有什么误解的例子'],
   },
   {
@@ -207,7 +324,13 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'growth',
     tags: ['目标', '规划'],
     text: '请描述你的职业规划以及你为此做了哪些准备。',
-    expectedPoints: ['短期目标', '长期愿景', '差距分析', '行动计划', '进展衡量'],
+    expectedPoints: [
+      '短期目标',
+      '长期愿景',
+      '差距分析',
+      '行动计划',
+      '进展衡量',
+    ],
     followUpHints: ['如果计划落空怎么办', '你对这个行业趋势怎么看'],
   },
 
@@ -219,7 +342,13 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'market-sizing',
     tags: ['估算', '市场'],
     text: '请估算北京市一年消耗的咖啡杯数量。请展示你的估算思路和假设。',
-    expectedPoints: ['结构化分解', '合理假设', '计算逻辑', '交叉验证', '结论清晰'],
+    expectedPoints: [
+      '结构化分解',
+      '合理假设',
+      '计算逻辑',
+      '交叉验证',
+      '结论清晰',
+    ],
     followUpHints: ['如果考虑外卖场景', '周末和工作日有什么区别'],
   },
   {
@@ -229,7 +358,13 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'profitability',
     tags: ['利润', '成本'],
     text: '一家连锁餐厅发现利润连续三个季度下降，请你分析可能的原因并提出建议。',
-    expectedPoints: ['收入端分析', '成本端分析', '外部因素', '内部因素', '优先级排序'],
+    expectedPoints: [
+      '收入端分析',
+      '成本端分析',
+      '外部因素',
+      '内部因素',
+      '优先级排序',
+    ],
     followUpHints: ['如果是人力成本上升最快呢', '外卖平台抽成影响多大'],
   },
   {
@@ -239,7 +374,13 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'market-entry',
     tags: ['进入', '竞争'],
     text: '一家中国电动车公司考虑进入德国市场，请分析可行性并给出策略建议。',
-    expectedPoints: ['市场吸引力', '竞争优势', '进入壁垒', '进入模式', '风险缓解'],
+    expectedPoints: [
+      '市场吸引力',
+      '竞争优势',
+      '进入壁垒',
+      '进入模式',
+      '风险缓解',
+    ],
     followUpHints: ['关税政策变化影响', '品牌认知度如何建立'],
   },
   {
@@ -249,7 +390,13 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'pricing',
     tags: ['定价', '策略'],
     text: '一家 SaaS 公司要为其新产品定价，请设计定价策略并说明依据。',
-    expectedPoints: ['价值定位', '竞品分析', '成本结构', '定价模式', '测试验证方案'],
+    expectedPoints: [
+      '价值定位',
+      '竞品分析',
+      '成本结构',
+      '定价模式',
+      '测试验证方案',
+    ],
     followUpHints: ['如果是按用量计费呢', '免费版和付费版如何划分'],
   },
   {
@@ -259,7 +406,13 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'growth',
     tags: ['增长', '战略'],
     text: '一个日活 100 万的社交 App 面临增长瓶颈，请提出增长策略并排优先级。',
-    expectedPoints: ['增长飞轮分析', '用户分群', '渠道分析', '产品改进', 'ROI评估'],
+    expectedPoints: [
+      '增长飞轮分析',
+      '用户分群',
+      '渠道分析',
+      '产品改进',
+      'ROI评估',
+    ],
     followUpHints: ['如果海外市场是第一优先', '用户留存和新增哪个更重要'],
   },
   {
@@ -269,7 +422,13 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'market-sizing',
     tags: ['估算', '人口'],
     text: '请估算中国宠物经济的年市场规模。',
-    expectedPoints: ['宠物数量估算', '年均消费', '品类拆分', '增长趋势', '验证方法'],
+    expectedPoints: [
+      '宠物数量估算',
+      '年均消费',
+      '品类拆分',
+      '增长趋势',
+      '验证方法',
+    ],
     followUpHints: ['猫和狗的消费差异大吗', '宠物医疗占比多少'],
   },
   {
@@ -279,7 +438,13 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'profitability',
     tags: ['优化', '运营'],
     text: '一家快递公司想降低最后一公里的配送成本，请提出方案并分析可行性。',
-    expectedPoints: ['成本结构拆解', '技术方案', '模式创新', '可行性评估', '落地步骤'],
+    expectedPoints: [
+      '成本结构拆解',
+      '技术方案',
+      '模式创新',
+      '可行性评估',
+      '落地步骤',
+    ],
     followUpHints: ['菜鸟驿站模式有什么利弊', '众包配送适合吗'],
   },
   {
@@ -289,7 +454,13 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'growth',
     tags: ['并购', '整合'],
     text: '互联网巨头 A 要收购创业公司 B，请分析这笔交易的战略价值和整合风险。',
-    expectedPoints: ['协同效应', '估值逻辑', '文化整合', '人才保留', '时间线规划'],
+    expectedPoints: [
+      '协同效应',
+      '估值逻辑',
+      '文化整合',
+      '人才保留',
+      '时间线规划',
+    ],
     followUpHints: ['如果B的核心团队可能离职', '反垄断审查风险'],
   },
   {
@@ -299,7 +470,13 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'market-entry',
     tags: ['新产品', '定位'],
     text: '一家传统家电企业想推出智能家居产品线，请分析市场机会和进入策略。',
-    expectedPoints: ['市场趋势', '自身优势', '竞争格局', '产品定位', '渠道策略'],
+    expectedPoints: [
+      '市场趋势',
+      '自身优势',
+      '竞争格局',
+      '产品定位',
+      '渠道策略',
+    ],
     followUpHints: ['IoT平台选择哪个生态', '硬件和软件哪边先投入'],
   },
   {
@@ -309,7 +486,13 @@ export const SEED_QUESTIONS: Question[] = [
     category: 'pricing',
     tags: ['订阅', '转化'],
     text: '一个免费工具类 App 考虑推出付费订阅，如何设计转化策略？',
-    expectedPoints: ['用户分层', '付费点设计', '定价测试', '转化漏斗', '保留策略'],
+    expectedPoints: [
+      '用户分层',
+      '付费点设计',
+      '定价测试',
+      '转化漏斗',
+      '保留策略',
+    ],
     followUpHints: ['免费用户的价值如何衡量', '订阅疲劳怎么应对'],
   },
 ];

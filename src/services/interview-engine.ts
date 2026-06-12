@@ -46,7 +46,10 @@ export interface InterviewContext {
 }
 
 /** 阶段变更回调 */
-export type StageCallback = (stage: InterviewStage, context: InterviewContext) => void | Promise<void>;
+export type StageCallback = (
+  stage: InterviewStage,
+  context: InterviewContext,
+) => void | Promise<void>;
 
 /**
  * 面试引擎
@@ -112,7 +115,9 @@ export class InterviewEngine {
   async transition(event: InterviewEvent): Promise<void> {
     const nextStage = this.getNextStage(event);
     if (!nextStage) {
-      throw new Error(`无效的状态转换：在 ${this.stage} 阶段不能触发 ${event} 事件`);
+      throw new Error(
+        `无效的状态转换：在 ${this.stage} 阶段不能触发 ${event} 事件`,
+      );
     }
 
     // 离开回调
@@ -160,7 +165,10 @@ export class InterviewEngine {
 
   /** 状态转换表 */
   private getNextStage(event: InterviewEvent): InterviewStage | null {
-    const map: Record<InterviewStage, Partial<Record<InterviewEvent, InterviewStage>>> = {
+    const map: Record<
+      InterviewStage,
+      Partial<Record<InterviewEvent, InterviewStage>>
+    > = {
       idle: { START: 'welcome' },
       welcome: { WELCOME_DONE: 'asking' },
       asking: { QUESTION_DELIVERED: 'answering' },

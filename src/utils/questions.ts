@@ -73,7 +73,8 @@ export function selectQuestions(
         (q) => !selected.some((s) => s.id === q.id),
       );
       if (unusedPool.length > 0) {
-        const picked = unusedPool[Math.floor(Math.random() * unusedPool.length)];
+        const picked =
+          unusedPool[Math.floor(Math.random() * unusedPool.length)];
         selected.push(picked);
       }
     }

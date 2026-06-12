@@ -103,10 +103,7 @@ export function createLLMClient(config: LLMConfig): LLMClient {
         };
       } catch (err) {
         // AbortError 直接抛出不重试
-        if (
-          err instanceof DOMException &&
-          err.name === 'AbortError'
-        ) {
+        if (err instanceof DOMException && err.name === 'AbortError') {
           throw err;
         }
 

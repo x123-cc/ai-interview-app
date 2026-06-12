@@ -35,7 +35,9 @@ export default function useTimer(
   const [isTimeout, setIsTimeout] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const onTimeoutRef = useRef(onTimeout);
-  onTimeoutRef.current = onTimeout;
+  useEffect(() => {
+    onTimeoutRef.current = onTimeout;
+  }, [onTimeout]);
 
   const clearTimer = useCallback(() => {
     if (intervalRef.current !== null) {
@@ -85,9 +87,17 @@ export default function useTimer(
   // 组件卸载清理
   useEffect(() => clearTimer, [clearTimer]);
 
-  const progress =
-    durationSeconds > 0 ? remaining / durationSeconds : 1;
+  const progress = durationSeconds > 0 ? remaining / durationSeconds : 1;
   const isWarning = remaining <= 10 && isRunning;
 
-  return { remaining, isRunning, isTimeout, progress, isWarning, start, pause, reset };
+  return {
+    remaining,
+    isRunning,
+    isTimeout,
+    progress,
+    isWarning,
+    start,
+    pause,
+    reset,
+  };
 }

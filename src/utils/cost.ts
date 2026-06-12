@@ -94,8 +94,7 @@ export class CostTracker {
    */
   recordWhisperCall(durationSeconds: number): void {
     const minutes = durationSeconds / 60;
-    const estimatedCost =
-      Math.round(minutes * 0.006 * 10000) / 10000;
+    const estimatedCost = Math.round(minutes * 0.006 * 10000) / 10000;
     this.entries.push({
       timestamp: Date.now(),
       service: 'whisper',
@@ -111,9 +110,11 @@ export class CostTracker {
    * 获取当前会话总费用
    */
   getSessionCost(): number {
-    return Math.round(
-      this.entries.reduce((sum, e) => sum + e.estimatedCost, 0) * 10000,
-    ) / 10000;
+    return (
+      Math.round(
+        this.entries.reduce((sum, e) => sum + e.estimatedCost, 0) * 10000,
+      ) / 10000
+    );
   }
 
   /**

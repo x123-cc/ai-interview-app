@@ -65,14 +65,22 @@ export default function InterviewPage() {
           <div className="flex items-center justify-between">
             <span className="font-medium text-gray-900">模拟面试中</span>
             <div className="flex items-center gap-4">
-              <VolumeMeter level={audio.volumeLevel} isActive={audio.state === 'active'} />
+              <VolumeMeter
+                level={audio.volumeLevel}
+                isActive={audio.state === 'active'}
+              />
               <span className="text-sm text-gray-500">
                 {stt.isListening ? '🎤 正在听...' : '点击开始'}
               </span>
             </div>
           </div>
           <div className="mt-2">
-            <TimerBar remaining={timer.remaining} total={120} isWarning={timer.isWarning} isTimeout={timer.isTimeout} />
+            <TimerBar
+              remaining={timer.remaining}
+              total={120}
+              isWarning={timer.isWarning}
+              isTimeout={timer.isTimeout}
+            />
           </div>
         </div>
 
@@ -82,15 +90,23 @@ export default function InterviewPage() {
             <div className="flex h-full items-center justify-center text-gray-400">
               <div className="text-center">
                 <p className="text-lg">准备开始面试</p>
-                <button onClick={startInterview} className="mt-4 rounded-lg bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                <button
+                  onClick={startInterview}
+                  className="mt-4 rounded-lg bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                >
                   开始面试
                 </button>
               </div>
             </div>
           ) : (
             messages.map((msg, i) => (
-              <div key={i} className={`mb-4 flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[70%] rounded-lg px-4 py-2 ${msg.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-900'}`}>
+              <div
+                key={i}
+                className={`mb-4 flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`max-w-[70%] rounded-lg px-4 py-2 ${msg.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-900'}`}
+                >
                   <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
                 </div>
               </div>
@@ -103,17 +119,26 @@ export default function InterviewPage() {
         <div className="border-t border-gray-200 px-4 py-3">
           <div className="flex gap-2">
             <button
-              onClick={() => stt.isListening ? stt.stop() : stt.start()}
+              onClick={() => (stt.isListening ? stt.stop() : stt.start())}
               className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${stt.isListening ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
             >
               {stt.isListening ? '⏹ 停止' : '🎤 语音'}
             </button>
-            <input type="text" value={inputText}
+            <input
+              type="text"
+              value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-              placeholder="输入回答..." className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" />
-            <button onClick={sendMessage} disabled={!inputText.trim()}
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">发送</button>
+              placeholder="输入回答..."
+              className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+            />
+            <button
+              onClick={sendMessage}
+              disabled={!inputText.trim()}
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            >
+              发送
+            </button>
           </div>
         </div>
       </div>
@@ -121,11 +146,22 @@ export default function InterviewPage() {
       {/* 右侧：摄像头面板 */}
       <div className="ml-4 flex w-64 flex-col gap-2">
         <div className="overflow-hidden rounded-lg border border-gray-200 bg-black">
-          <CameraView stream={camera.stream} mirrored className="aspect-[4/3]" />
+          <CameraView
+            stream={camera.stream}
+            mirrored
+            className="aspect-[4/3]"
+          />
         </div>
-        <CameraStatus state={camera.state} error={camera.error} onRetry={() => camera.start()} />
+        <CameraStatus
+          state={camera.state}
+          error={camera.error}
+          onRetry={() => camera.start()}
+        />
         {camera.state === 'idle' && (
-          <button onClick={() => camera.start()} className="rounded-lg bg-blue-600 py-2 text-sm font-medium text-white hover:bg-blue-700">
+          <button
+            onClick={() => camera.start()}
+            className="rounded-lg bg-blue-600 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
             开启摄像头
           </button>
         )}

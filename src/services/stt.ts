@@ -89,9 +89,7 @@ export async function transcribeWithWhisper(
       // 速率限制，可重试
       if (response.status === 429) {
         if (attempt === maxRetries) {
-          throw new RateLimitError(
-            'Whisper API 请求过于频繁，请稍后重试',
-          );
+          throw new RateLimitError('Whisper API 请求过于频繁，请稍后重试');
         }
         await sleep(getRetryDelay(attempt));
         continue;
@@ -109,9 +107,7 @@ export async function transcribeWithWhisper(
       }
 
       // 其他错误
-      throw new Error(
-        `Whisper API 返回未知错误（${response.status}）`,
-      );
+      throw new Error(`Whisper API 返回未知错误（${response.status}）`);
     } catch (err) {
       // 网络错误，可重试
       if (err instanceof TypeError && attempt < maxRetries) {

@@ -100,7 +100,10 @@ export class SpeechService {
 
       const cloudLatency = Math.round(performance.now() - startTime);
       // 粗略费用估算：Whisper $0.006/分钟，每段按 5 秒估算约 $0.0005
-      const cloudCost = Math.round(((audioBlob.size / 1024 / 10) * 0.006 + Number.EPSILON) * 10000) / 10000;
+      const cloudCost =
+        Math.round(
+          ((audioBlob.size / 1024 / 10) * 0.006 + Number.EPSILON) * 10000,
+        ) / 10000;
 
       return {
         text: result.text || localTranscript,
@@ -130,9 +133,7 @@ export class SpeechService {
    * @param audioBlob - 音频数据
    * @returns 识别结果
    */
-  async recognizeCloudOnly(
-    audioBlob: Blob,
-  ): Promise<SpeechRecognitionResult> {
+  async recognizeCloudOnly(audioBlob: Blob): Promise<SpeechRecognitionResult> {
     const startTime = performance.now();
 
     try {
@@ -142,7 +143,10 @@ export class SpeechService {
       );
 
       const cloudLatency = Math.round(performance.now() - startTime);
-      const cloudCost = Math.round(((audioBlob.size / 1024 / 10) * 0.006 + Number.EPSILON) * 10000) / 10000;
+      const cloudCost =
+        Math.round(
+          ((audioBlob.size / 1024 / 10) * 0.006 + Number.EPSILON) * 10000,
+        ) / 10000;
 
       return {
         text: result.text,

@@ -27,10 +27,7 @@ export class ConversationManager {
   private maxTokens: number;
   private minRecentRounds: number;
 
-  constructor(
-    systemPrompt: string,
-    config: ConversationConfig = {},
-  ) {
+  constructor(systemPrompt: string, config: ConversationConfig = {}) {
     this.systemPrompt = systemPrompt;
     this.maxTokens = config.maxTokens ?? 8000;
     this.minRecentRounds = config.minRecentRounds ?? 3;
@@ -100,11 +97,7 @@ export class ConversationManager {
     const messages: LLMTextMessage[] = [];
 
     // System Prompt
-    let systemContent = this.systemPrompt;
-    if (this.turns.length > 0 && this.getEstimatedTokens() > 0) {
-      // 如果有裁剪过的历史，不需要额外标记（shift 已处理）
-    }
-    messages.push({ role: 'system', content: systemContent });
+    messages.push({ role: 'system', content: this.systemPrompt });
 
     // 对话历史
     for (const turn of this.turns) {

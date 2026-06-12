@@ -40,10 +40,14 @@ interface SpeechRecognitionErrorEvent extends Event {
   error: string;
 }
 
-declare let SpeechRecognition: {
-  new (): SpeechRecognition;
-} | undefined;
+declare let SpeechRecognition:
+  | {
+      new (): SpeechRecognition;
+    }
+  | undefined;
 
-declare let webkitSpeechRecognition: {
-  new (): SpeechRecognition;
-} | undefined;
+declare let webkitSpeechRecognition:
+  | {
+      new (): SpeechRecognition;
+    }
+  | undefined;
