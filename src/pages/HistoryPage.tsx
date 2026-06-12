@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { INTERVIEW_TYPE_LABELS } from '@/config/prompts';
+import TrendChart from '@/components/history/TrendChart';
+import { calculateTrend, findWeakestDimension, generateSuggestions } from '@/utils/analytics';
 
 interface HistoryEntry {
   id: string;
@@ -31,9 +33,43 @@ export default function HistoryPage() {
     );
   }
 
+  const scores = entries.map((e) => e.score);
+  const trend = calculateTrend(scores);
+  const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+  const weakest = findWeakestDimension({});
+  const suggestions = generateSuggestions(weakest, avgScore);
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
       <h1 className="text-2xl font-semibold text-gray-900">历史记录</h1>
+
+      {/* 趋势分析 */}
+      {entries.length >= 2 && (
+        <div className="mt-6 rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-medium text-gray-700">评分趋势</h2>
+            <span className={`text-sm font-medium ${trend.direction === 'rising' ? 'text-green-600' : trend.direction === 'falling' ? 'text-red-600' : 'text-gray-500'}`}>
+              {trend.label} {trend.direction === 'rising' ? '↑' : trend.direction === 'falling' ? '↓' : '→'}
+            </span>
+          </div>
+          <TrendChart scores={scores} />
+          <div className="mt-2 flex gap-4 text-xs text-gray-500">
+            <span>平均分：{avgScore.toFixed(1)}/10</span>
+            <span>总次数：{entries.length}</span>
+          </div>
+        </div>
+      )}
+
+      {/* 改进建议 */}
+      {suggestions.length > 0 && (
+        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <h3 className="text-sm font-medium text-amber-800">改进建议</h3>
+          <ul className="mt-1 list-disc pl-5 text-sm text-amber-700">
+            {suggestions.map((s, i) => <li key={i}>{s}</li>)}
+          </ul>
+        </div>
+      )}
+
       <div className="mt-6 space-y-4">
         {entries.map((entry) => (
           <div
