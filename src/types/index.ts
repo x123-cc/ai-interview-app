@@ -147,8 +147,10 @@ export interface UseTTSReturn {
   state: TTSState;
   /** 是否支持语音合成 */
   isSupported: boolean;
-  /** 播报指定文本 */
+  /** 播报指定文本（加入队列尾部） */
   speak: (text: string, options?: TTSVoiceOptions) => void;
+  /** 批量播报多段文本 */
+  speakAll: (texts: string[], options?: TTSVoiceOptions) => void;
   /** 停止所有语音并清空队列 */
   stop: () => void;
   /** 暂停当前语音 */
