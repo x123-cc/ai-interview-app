@@ -241,14 +241,25 @@ export interface LLMResult {
   model: string;
 }
 
+/** LLM 调用选项 */
+export interface LLMCallOptions {
+  /** 用于中断请求的 AbortSignal */
+  signal?: AbortSignal;
+  /** 图片分析详细程度（仅多模态调用） */
+  imageDetail?: 'low' | 'high' | 'auto';
+}
+
 /** LLM 客户端接口 */
 export interface LLMClient {
   /** 发送纯文本对话 */
-  chat: (messages: LLMTextMessage[]) => Promise<LLMResult>;
+  chat: (
+    messages: LLMTextMessage[],
+    options?: LLMCallOptions,
+  ) => Promise<LLMResult>;
   /** 发送多模态对话（文本 + 图片） */
   chatWithImage: (
     messages: LLMTextMessage[],
     imageBase64: string,
-    imageDetail?: 'low' | 'high' | 'auto',
+    options?: LLMCallOptions,
   ) => Promise<LLMResult>;
 }
