@@ -1,54 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import type { STTState, UseSTTOptions, UseSTTReturn } from '@/types';
 
-// TypeScript 未内置 SpeechRecognition 类型声明，此处补充最小定义
-interface SpeechRecognition extends EventTarget {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  start(): void;
-  stop(): void;
-  abort(): void;
-  onresult: ((event: SpeechRecognitionEvent) => void) | null;
-  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
-  onend: (() => void) | null;
-  onspeechstart: (() => void) | null;
-  onspeechend: (() => void) | null;
-}
-
-interface SpeechRecognitionEvent extends Event {
-  resultIndex: number;
-  results: SpeechRecognitionResultList;
-}
-
-interface SpeechRecognitionResultList {
-  length: number;
-  [index: number]: SpeechRecognitionResult;
-}
-
-interface SpeechRecognitionResult {
-  isFinal: boolean;
-  length: number;
-  [index: number]: SpeechRecognitionAlternative;
-}
-
-interface SpeechRecognitionAlternative {
-  transcript: string;
-  confidence: number;
-}
-
-interface SpeechRecognitionErrorEvent extends Event {
-  error: string;
-}
-
-// 浏览器全局构造函数（可能带前缀）
-declare let SpeechRecognition: {
-  new (): SpeechRecognition;
-} | undefined;
-declare let webkitSpeechRecognition: {
-  new (): SpeechRecognition;
-} | undefined;
-
 /**
  * 获取浏览器 SpeechRecognition 构造函数
  *
