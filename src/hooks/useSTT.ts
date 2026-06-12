@@ -30,13 +30,20 @@ function getRecognitionConstructor():
  * @returns 识别状态、文本和控制方法
  */
 export default function useSTT(options: UseSTTOptions = {}): UseSTTReturn {
-  const { lang = 'zh-CN', continuous = false, silenceTimeout = 1500 } = options;
+  const {
+    lang = 'zh-CN',
+    continuous = false,
+    silenceTimeout = 1500,
+    confidenceThreshold = 0.7,
+  } = options;
 
   const [state, setState] = useState<STTState>(() => {
     return getRecognitionConstructor() ? 'idle' : 'unsupported';
   });
   const [transcript, setTranscript] = useState('');
   const [interimTranscript, setInterimTranscript] = useState('');
+  const [confidence, setConfidence] = useState(0);
+  const [needsCloudFallback, setNeedsCloudFallback] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -98,6 +105,12 @@ export default function useSTT(options: UseSTTOptions = {}): UseSTTReturn {
         const alternative = result[0];
         if (result.isFinal) {
           finalText += alternative.transcript;
+          // 记录置信度并判断是否需要云端兜底
+          const conf = alternative.confidence;
+          if (mountedRef.current) {
+            setConfidence(conf);
+            setNeedsCloudFallback(conf < confidenceThreshold);
+          }
         } else {
           interim += alternative.transcript;
         }
@@ -186,7 +199,7 @@ export default function useSTT(options: UseSTTOptions = {}): UseSTTReturn {
     };
 
     return recognition;
-  }, [lang, continuous, silenceTimeout]);
+  }, [lang, continuous, silenceTimeout, confidenceThreshold]);
 
   /**
    * 开始监听语音
@@ -209,6 +222,8 @@ export default function useSTT(options: UseSTTOptions = {}): UseSTTReturn {
     if (mountedRef.current) {
       setTranscript('');
       setInterimTranscript('');
+      setConfidence(0);
+      setNeedsCloudFallback(false);
       setError(null);
       setState('listening');
     }
@@ -256,6 +271,8 @@ export default function useSTT(options: UseSTTOptions = {}): UseSTTReturn {
       accumulatedRef.current = '';
       setTranscript('');
       setInterimTranscript('');
+      setConfidence(0);
+      setNeedsCloudFallback(false);
       setState('idle');
       setError(null);
     }
@@ -283,6 +300,8 @@ export default function useSTT(options: UseSTTOptions = {}): UseSTTReturn {
     state,
     transcript,
     interimTranscript,
+    confidence,
+    needsCloudFallback,
     isListening: state === 'listening',
     error,
     isSupported,

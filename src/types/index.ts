@@ -99,6 +99,8 @@ export interface UseSTTOptions {
   continuous?: boolean;
   /** 静默超时时间（毫秒），用户停止说话超过此时长后自动截止。默认 1500ms */
   silenceTimeout?: number;
+  /** 置信度阈值 0-1，低于此值时标记需要云端兜底。默认 0.7 */
+  confidenceThreshold?: number;
 }
 
 /** useSTT Hook 返回值 */
@@ -109,6 +111,10 @@ export interface UseSTTReturn {
   transcript: string;
   /** 当前中间结果文本（未确认） */
   interimTranscript: string;
+  /** 最近一次最终结果的识别置信度（0-1） */
+  confidence: number;
+  /** 最近一次识别是否需要云端兜底（置信度低于阈值或浏览器不支持） */
+  needsCloudFallback: boolean;
   /** 是否正在监听 */
   isListening: boolean;
   /** 错误信息 */
