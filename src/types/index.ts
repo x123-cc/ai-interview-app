@@ -43,3 +43,32 @@ export interface UseCameraReturn {
   /** 停止摄像头采集并释放资源 */
   stop: () => void;
 }
+
+/** 音频采集状态（复用摄像头状态机模式） */
+export type AudioCaptureState = CameraState;
+
+/** 音频采集错误类型 */
+export type AudioCaptureErrorType = CameraErrorType;
+
+/** 音频采集错误信息 */
+export type AudioCaptureError = CameraError;
+
+/** useAudioCapture Hook 配置选项 */
+export interface UseAudioCaptureOptions {
+  /** 指定音频输入设备 ID，不传则使用系统默认麦克风 */
+  deviceId?: string;
+}
+
+/** useAudioCapture Hook 返回值 */
+export interface UseAudioCaptureReturn {
+  /** 当前音频采集状态 */
+  state: AudioCaptureState;
+  /** 实时音量分贝值（0-100），静音为 0 */
+  volumeLevel: number;
+  /** 错误信息 */
+  error: AudioCaptureError | null;
+  /** 启动麦克风采集 */
+  start: () => Promise<void>;
+  /** 停止麦克风采集并释放资源 */
+  stop: () => void;
+}
