@@ -4,6 +4,7 @@ import HomePage from '@/pages/HomePage';
 import InterviewPage from '@/pages/InterviewPage';
 import SettingsPage from '@/pages/SettingsPage';
 import HistoryPage from '@/pages/HistoryPage';
+import HistoryDetailPage from '@/pages/HistoryDetailPage';
 
 export default function AppRoutes() {
   return (
@@ -13,6 +14,7 @@ export default function AppRoutes() {
         <Route path="/interview" element={<InterviewPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/history" element={<HistoryPage />} />
+        <Route path="/history/:id" element={<HistoryDetailPage />} />
       </Route>
     </Routes>
   );

@@ -294,3 +294,65 @@ export interface LLMClient {
     options?: LLMCallOptions,
   ) => Promise<LLMResult>;
 }
+
+/** 面试模式 */
+export type InterviewMode = 'interview' | 'review';
+
+/** 复盘内容来源类型 */
+export type ReviewSourceType = 'video' | 'audio' | 'document' | 'text';
+
+/** 复盘解析结果 */
+export interface ReviewParseResult {
+  /** 提取的面试问题列表 */
+  questions: string[];
+  /** 完整文本上下文 */
+  context: string;
+  /** 内容来源类型 */
+  sourceType: ReviewSourceType;
+}
+
+/** 聊天消息 */
+export interface ChatMessage {
+  role: 'interviewer' | 'user' | 'system';
+  text: string;
+  timestamp: number;
+  /** 系统消息子类型 */
+  systemType?: 'vision' | 'alert' | 'info';
+}
+
+/** 历史记录 */
+export interface HistoryRecord {
+  id: string;
+  /** 面试日期 ISO 字符串 */
+  date: string;
+  /** AI 生成的标题 */
+  title: string;
+  /** 面试模式 */
+  mode: InterviewMode;
+  /** 实际面试时长（秒） */
+  duration: number;
+  /** 用户设定的时长（秒） */
+  setDuration: number;
+  /** 简历文本（用于生成模拟回答） */
+  resume?: string;
+  /** JD 文本 */
+  jd?: string;
+  /** 复盘模式下的问题列表 */
+  questions?: string[];
+  /** 完整逐字稿 */
+  transcript: ChatMessage[];
+  /** 综合评分（1-10） */
+  score?: number;
+  /** 各维度评分 */
+  dimensions?: Record<string, number>;
+  /** AI 模拟回答（查看详情时生成） */
+  modelAnswers?: ModelAnswer[];
+}
+
+/** AI 模拟回答 */
+export interface ModelAnswer {
+  /** 对应的问题文本 */
+  question: string;
+  /** AI 基于简历生成的模拟回答 */
+  answer: string;
+}

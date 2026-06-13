@@ -5,6 +5,13 @@ import type {
   LLMTextMessage,
   LLMCallOptions,
 } from '@/types';
+import type {
+  AgentLLMClient,
+  FunctionToolDef,
+  LLMToolCall,
+  LLMResultWithTools,
+  LLMMessageWithTools,
+} from '@/types/agent';
 
 /** 最大重试次数 */
 const MAX_RETRIES = 3;
@@ -190,4 +197,103 @@ export function createLLMClient(config: LLMConfig): LLMClient {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// ── Agent 扩展：工具调用 ──
+
+/**
+ * 创建支持工具调用的 Agent LLM 客户端
+ *
+ * 在基础 createLLMClient 上增加 `chatWithTools` 方法，
+ * 支持 OpenAI 兼容的 function calling 协议。
+ */
+export function createAgentLLMClient(config: LLMConfig): AgentLLMClient {
+  const baseClient = createLLMClient(config);
+
+  async function chatWithTools(
+    messages: LLMMessageWithTools[],
+    tools: FunctionToolDef[],
+    options?: LLMCallOptions,
+  ): Promise<LLMResultWithTools> {
+    const { apiKey, baseUrl = 'https://api.openai.com/v1', model = 'gpt-4o', maxTokens = 1024, temperature = 0.7 } = config;
+
+    const body: Record<string, unknown> = {
+      model,
+      messages,
+      max_tokens: maxTokens,
+      temperature,
+      tools,
+      tool_choice: 'auto',
+    };
+
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt <= 3; attempt++) {
+      if (options?.signal?.aborted) {
+        throw new DOMException('请求已被取消', 'AbortError');
+      }
+
+      try {
+        const response = await fetch(`${baseUrl}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify(body),
+          signal: options?.signal,
+        });
+
+        if (response.status === 401) {
+          const errorBody = await response.text().catch(() => '');
+          throw new Error(`API Key 无效：${errorBody}`);
+        }
+
+        if (response.status === 429) {
+          if (attempt === 3) throw new Error('API 请求过于频繁');
+          await sleep(Math.min(1000 * Math.pow(2, attempt), 16000));
+          continue;
+        }
+
+        if (response.status >= 500) {
+          if (attempt === 3) throw new Error(`API 服务异常（${response.status}）`);
+          await sleep(Math.min(1000 * Math.pow(2, attempt), 16000));
+          continue;
+        }
+
+        if (!response.ok) {
+          const errorBody = await response.text().catch(() => '');
+          throw new Error(`API 错误（${response.status}）：${errorBody}`);
+        }
+
+        const data = await response.json();
+        const choice = data.choices?.[0];
+        const message = choice?.message;
+
+        const result: LLMResultWithTools = {
+          content: message?.content ?? '',
+          toolCalls: message?.tool_calls as LLMToolCall[] | undefined,
+          inputTokens: data.usage?.prompt_tokens ?? 0,
+          outputTokens: data.usage?.completion_tokens ?? 0,
+          model: data.model ?? model,
+        };
+
+        return result;
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') throw err;
+        lastError = err instanceof Error ? err : new Error(String(err));
+        if (attempt < 3) {
+          await sleep(Math.min(1000 * Math.pow(2, attempt), 16000));
+          continue;
+        }
+      }
+    }
+
+    throw lastError ?? new Error('LLM API 调用失败');
+  }
+
+  return {
+    ...baseClient,
+    chatWithTools,
+  };
 }

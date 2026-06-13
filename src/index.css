@@ -1,1 +1,119 @@
 @import 'tailwindcss';
+
+/* ── Apple 风格设计令牌 ── */
+@theme {
+  --color-apple-bg: #f5f5f7;
+  --color-apple-white: #ffffff;
+  --color-apple-text: #1d1d1f;
+  --color-apple-secondary: #86868b;
+  --color-apple-tertiary: #aeaeb2;
+  --color-apple-blue: #0071e3;
+  --color-apple-blue-hover: #0077ed;
+  --color-apple-green: #34c759;
+  --color-apple-red: #ff3b30;
+  --color-apple-orange: #ff9500;
+  --color-apple-yellow: #ffcc00;
+  --color-apple-border: #d2d2d7;
+  --color-apple-card: #ffffff;
+  --color-apple-glass: rgba(255, 255, 255, 0.72);
+  --font-family-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+/* ── 全局基础样式 ── */
+html {
+  font-family: var(--font-family-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: #f5f5f7;
+  color: #1d1d1f;
+}
+
+/* ── Apple 风格工具类 ── */
+.apple-card {
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.apple-card-hover {
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+.apple-card-hover:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+.apple-glass {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.apple-btn-primary {
+  background: #0071e3;
+  color: #ffffff;
+  border-radius: 980px;
+  padding: 0.625rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 113, 227, 0.25);
+}
+.apple-btn-primary:hover {
+  background: #0077ed;
+  box-shadow: 0 2px 6px rgba(0, 113, 227, 0.35);
+}
+.apple-btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.apple-btn-secondary {
+  background: #e8e8ed;
+  color: #1d1d1f;
+  border-radius: 980px;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+.apple-btn-secondary:hover {
+  background: #dcdce0;
+}
+
+.apple-input {
+  border: 1px solid #d2d2d7;
+  border-radius: 12px;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  background: #ffffff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.apple-input:focus {
+  outline: none;
+  border-color: #0071e3;
+  box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.12);
+}
+.apple-input::placeholder {
+  color: #aeaeb2;
+}
+
+/* ── 滚动条 ── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #d2d2d7;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #aeaeb2;
+}
