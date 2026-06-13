@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { getBrowserCapabilities } from '@/utils/browser';
-import { PROVIDER_OPTIONS, detectProviderByKey, type LLMProvider } from '@/config/providers';
+import { PROVIDERS, PROVIDER_OPTIONS, detectProviderByKey, type LLMProvider } from '@/config/providers';
+
+function getDefaultModelForProvider(provider: LLMProvider): string {
+  return PROVIDERS[provider]?.defaultModel ?? 'gpt-4o';
+}
 
 export default function SettingsPage() {
   const [apiKey, setApiKey] = useState(
@@ -11,6 +15,9 @@ export default function SettingsPage() {
   );
   const [customBaseUrl, setCustomBaseUrl] = useState(
     () => localStorage.getItem('ai_interview_base_url') || '',
+  );
+  const [model, setModel] = useState(
+    () => localStorage.getItem('ai_interview_model') || '',
   );
   const [autoSave, setAutoSave] = useState(
     () => localStorage.getItem('ai_interview_auto_save') === 'true',
@@ -25,6 +32,7 @@ export default function SettingsPage() {
   const handleSave = () => {
     localStorage.setItem('ai_interview_api_key', apiKey);
     localStorage.setItem('ai_interview_provider', provider);
+    localStorage.setItem('ai_interview_model', model);
     if (provider === 'custom') {
       localStorage.setItem('ai_interview_base_url', customBaseUrl);
     }
@@ -77,6 +85,7 @@ export default function SettingsPage() {
         }
       } else {
         // OpenAI 兼容: 发送一条简短测试消息
+        const testModel = model || cfg.defaultModel;
         const resp = await fetch(`${baseUrl}/chat/completions`, {
           method: 'POST',
           headers: {
@@ -84,7 +93,7 @@ export default function SettingsPage() {
             Authorization: `Bearer ${apiKey}`,
           },
           body: JSON.stringify({
-            model: cfg.defaultModel,
+            model: testModel,
             messages: [{ role: 'user', content: 'hi' }],
             max_tokens: 5,
           }),
@@ -92,9 +101,9 @@ export default function SettingsPage() {
 
         if (resp.ok) {
           const data = await resp.json();
-          const model = data.model || cfg.defaultModel;
+          const returnedModel = data.model || testModel;
           setVerifyResult('success');
-          setVerifyMsg(`连接成功，模型: ${model}`);
+          setVerifyMsg(`连接成功，模型: ${returnedModel}`);
         } else if (resp.status === 401 || resp.status === 403) {
           setVerifyResult('error');
           setVerifyMsg('API Key 无效或被拒绝');
@@ -138,6 +147,22 @@ export default function SettingsPage() {
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
+        </div>
+        {/* 模型名称 */}
+        <div className="mt-4">
+          <label className="text-[0.8125rem] font-medium tracking-tight text-[#1d1d1f]">
+            模型名称
+          </label>
+          <input
+            type="text"
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            placeholder={`默认: ${getDefaultModelForProvider(provider)}`}
+            className="apple-input mt-1.5 w-full"
+          />
+          <p className="mt-1 text-[0.6875rem] text-[#86868b]">
+            留空使用默认模型。如阿里 qwen3.5-omni-plus 请填写完整模型名
+          </p>
         </div>
         {/* 自定义端点 URL */}
         {provider === 'custom' && (

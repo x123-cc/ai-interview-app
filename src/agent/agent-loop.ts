@@ -253,7 +253,58 @@ ${config.questions ? `预设问题：${config.questions.slice(0, 3).join('、')}
       }
     }
 
-    // ── Step 1-N: Plan-Act Loop ──
+    // ── 当服务商不支持工具调用时：使用直接对话模式 ──
+    if (!config.supportsTools) {
+      const directPrompt = `${systemPrompt}
+
+## 重要：当前 LLM 不支持工具调用，请直接以面试官身份回复候选人。
+不要输出 JSON 或元数据，直接输出你要对候选人说的话。
+根据对话历史和候选人画像，决定是追问、进入下一题还是结束面试。
+如果面试结束，在回复末尾加上 "[面试结束]"。
+
+回复要求：60-120字，中文，自然流畅。`;
+
+      try {
+        const directMessages: LLMMessageWithTools[] = [
+          { role: 'system', content: directPrompt },
+          ...conversation.filter(m => m.role === 'user' || m.role === 'assistant'),
+        ];
+
+        const result = await this.llmClient.chat(
+          directMessages.map(m => ({ role: m.role as 'system' | 'user' | 'assistant', content: m.content || '' })),
+        );
+
+        let finalText = result.content.trim();
+        let isComplete = finalText.includes('[面试结束]');
+        finalText = finalText.replace('[面试结束]', '').trim();
+
+        context.workingMemory.add('agent', finalText);
+        this.transcript.push({ role: 'interviewer', text: finalText, timestamp: Date.now() });
+
+        if (isComplete) {
+          const convSummary = this.buildConversationSummary();
+          await this.registry.execute('generate_report', { conversation_summary: convSummary }, context);
+        }
+
+        return {
+          text: finalText,
+          steps: [{ toolName: 'direct_chat', reasoning: '服务商不支持工具调用，使用直接对话模式', result: { success: true, data: { mode: 'fallback' } } }],
+          isComplete,
+        };
+      } catch (err) {
+        console.error('Direct chat fallback error:', err);
+        const fallback = '好的，我理解了。请继续你的回答。';
+        context.workingMemory.add('agent', fallback);
+        this.transcript.push({ role: 'interviewer', text: fallback, timestamp: Date.now() });
+        return {
+          text: fallback,
+          steps: [],
+          isComplete: false,
+        };
+      }
+    }
+
+    // ── Step 1-N: Plan-Act Loop（工具调用模式） ──
     let finalText = '';
     let isComplete = false;
 

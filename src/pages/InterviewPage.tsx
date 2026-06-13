@@ -13,6 +13,7 @@ import { useVisionMonitor } from '@/hooks/useVisionMonitor';
 import useAgent from '@/hooks/useAgent';
 import { InterviewAI } from '@/services/interview-ai';
 import { createLLMClient } from '@/services/llm';
+import { transcribeWithWhisper } from '@/services/stt';
 import { getProviderConfig } from '@/config/providers';
 import { buildScoringPrompt, parseScoresFromJSON } from '@/utils/scoring';
 import type { InterviewScores } from '@/utils/scoring';
@@ -69,10 +70,86 @@ export default function InterviewPage() {
   const tts = useTTS();
   const timer = useTimer(configuredDuration);
 
-  // ── API config ──
+  // ── API config（必须在云端 STT 之前定义，因为 transcribeCloud 依赖它们）──
   const apiKey = localStorage.getItem('ai_interview_api_key') || '';
   const providerConfig = getProviderConfig();
   const apiReady = !!apiKey;
+
+  // ── 云端 STT 降级：录音 + Whisper ──
+  const [cloudSttLoading, setCloudSttLoading] = useState(false);
+  const audioStreamRef = useRef<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
+  // 初始化音频流（用于云端 STT 降级录音）
+  useEffect(() => {
+    if (!stt.isSupported || stt.needsCloudFallback) {
+      navigator.mediaDevices.getUserMedia({ audio: true }).then((s) => {
+        audioStreamRef.current = s;
+      }).catch(() => {
+        console.warn('[STT] 无法获取音频流用于云端降级');
+      });
+    }
+    return () => {
+      audioStreamRef.current?.getTracks().forEach((t) => t.stop());
+      audioStreamRef.current = null;
+    };
+  }, [stt.isSupported, stt.needsCloudFallback]);
+
+  // 开始录音
+  const startRecording = useCallback(() => {
+    const stream = audioStreamRef.current;
+    if (!stream) return;
+    try {
+      audioChunksRef.current = [];
+      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+    } catch {
+      // MediaRecorder 不支持
+    }
+  }, []);
+
+  // 停止录音并返回 Blob
+  const stopRecording = useCallback((): Promise<Blob | null> => {
+    return new Promise((resolve) => {
+      const recorder = mediaRecorderRef.current;
+      if (!recorder || recorder.state === 'inactive') {
+        resolve(null);
+        return;
+      }
+      recorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        resolve(blob.size > 0 ? blob : null);
+      };
+      recorder.stop();
+    });
+  }, []);
+
+  // 云端 Whisper 识别（仅 OpenAI 服务商可用）
+  const transcribeCloud = useCallback(async (): Promise<string | null> => {
+    if (!apiKey) return null;
+    if (providerConfig.id !== 'openai' && providerConfig.id !== 'custom') return null;
+    const blob = await stopRecording();
+    if (!blob) return null;
+    setCloudSttLoading(true);
+    try {
+      const result = await transcribeWithWhisper(blob, {
+        apiKey,
+        baseUrl: providerConfig.id === 'openai' ? undefined : providerConfig.baseUrl.replace(/\/v1\/?$/, ''),
+        language: 'zh',
+      });
+      return result.text?.trim() || null;
+    } catch (err) {
+      console.warn('[STT] Whisper 云识别失败:', err instanceof Error ? err.message : err);
+      return null;
+    } finally {
+      setCloudSttLoading(false);
+    }
+  }, [apiKey, providerConfig, stopRecording]);
 
   // ── Vision monitor ──
   const onVisionResult = useCallback((msg: ChatMessage) => {
@@ -82,7 +159,7 @@ export default function InterviewPage() {
 
   useVisionMonitor({
     intervalSeconds: 20,
-    enabled: hasStarted && !isPaused && camera.state === 'active' && !agentMode,
+    enabled: hasStarted && !isPaused && camera.state === 'active',
     stream: camera.stream,
     apiKey,
     baseUrl: providerConfig.baseUrl,
@@ -122,6 +199,7 @@ export default function InterviewPage() {
       jd: state?.jd,
       questions: state?.questions,
       context: state?.context,
+      supportsTools: providerConfig.supportsTools,
     },
     onSpeak: (text) => tts.speak(text),
     captureFrame: captureFrameForAgent,
@@ -132,7 +210,7 @@ export default function InterviewPage() {
   useEffect(() => {
     if (!apiReady) return;
 
-    const llmClient = createLLMClient({ apiKey, baseUrl: providerConfig.baseUrl });
+    const llmClient = createLLMClient({ apiKey, baseUrl: providerConfig.baseUrl, model: providerConfig.defaultModel });
     aiRef.current = new InterviewAI({
       llmClient,
       resume: state?.resume ?? '',
@@ -157,123 +235,14 @@ export default function InterviewPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // ── Start ──
-  const handleStart = useCallback(async () => {
-    setHasStarted(true);
-    startTimeRef.current = Date.now();
-    timer.start();
+  // ── 面试开始后自动开启麦克风，每次 agent 回复后重新开始 ──
+  const [sttRestartToken, setSttRestartToken] = useState(0);
 
-    if (agentMode) {
-      // Agent 模式
-      try {
-        const welcome = await agent.start();
-        setMessages(agent.messages);
-        tts.speak(welcome);
-      } catch {
-        setHasStarted(false);
-      }
-      setTimeout(scrollToBottom, 200);
-      return;
-    }
+  const triggerSttRestart = useCallback(() => {
+    setSttRestartToken((t) => t + 1);
+  }, []);
 
-    // 经典模式
-    if (!aiRef.current) return;
-    let welcome: string;
-    if (isResume && state?.resumeFrom) {
-      welcome = aiRef.current.resumeFrom(state.resumeFrom);
-      setMessages([
-        ...state.resumeFrom,
-        { role: 'interviewer', text: welcome, timestamp: Date.now() },
-      ]);
-    } else {
-      welcome = aiRef.current.getWelcomeMessage();
-      setMessages([{ role: 'interviewer', text: welcome, timestamp: Date.now() }]);
-    }
-    tts.speak(welcome);
-    setTimeout(scrollToBottom, 200);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isResume, timer, tts, agentMode, agent]);
-
-  // ── Send ──
-  const sendMessage = useCallback(async () => {
-    if (!inputText.trim() || isPaused) return;
-
-    const userText = inputText.trim();
-    setMessages((prev) => [...prev, { role: 'user', text: userText, timestamp: Date.now() }]);
-    setInputText('');
-    setTimeout(scrollToBottom, 100);
-
-    // ── Agent 模式 ──
-    if (agentMode) {
-      try {
-        await agent.submitAnswer(userText);
-        const agentMsgs = agent.messages;
-        setMessages(agentMsgs);
-        setTimeout(scrollToBottom, 100);
-
-        if (agent.isComplete && agent.finalReport) {
-          const report = agent.finalReport;
-          setScores({
-            dimensions: report.dimensions,
-            totalScore: report.totalScore,
-            summary: report.summary || '面试完成',
-          });
-          const recordId = saveToHistory(true, agentMsgs);
-          if (recordId) {
-            const raw = localStorage.getItem('ai_interview_history');
-            if (raw) {
-              const history: HistoryRecord[] = JSON.parse(raw);
-              const idx = history.findIndex((r) => r.id === recordId);
-              if (idx >= 0) {
-                history[idx].score = report.totalScore;
-                history[idx].dimensions = Object.fromEntries(
-                  report.dimensions.map((d) => [d.name, d.score]),
-                );
-                localStorage.setItem('ai_interview_history', JSON.stringify(history));
-              }
-            }
-          }
-        }
-      } catch {
-        setMessages((prev) => [...prev, { role: 'interviewer', text: '抱歉，Agent 处理出现问题。请稍后重试。', timestamp: Date.now() }]);
-      }
-      return;
-    }
-
-    try {
-      const response = await aiRef.current.processTurn(userText);
-      setMessages((prev) => [...prev, { role: 'interviewer', text: response.text, timestamp: Date.now() }]);
-      tts.speak(response.text);
-      setTimeout(scrollToBottom, 100);
-
-      if (response.vision?.suspiciousBehavior) {
-        const detail = response.vision?.suspicionDetail || '异常行为检测';
-        setMessages((prev) => [...prev, {
-          role: 'system', text: `⚠️ ${detail}`, timestamp: Date.now(), systemType: 'alert',
-        }]);
-      }
-      if (response.isComplete) {
-        const recordId = saveToHistory(true); // 静默保存
-        if (recordId) {
-          setTimeout(() => runScoring(recordId), 500);
-        }
-      }
-    } catch {
-      setMessages((prev) => [...prev, { role: 'interviewer', text: '抱歉，连接出现问题。请稍后重试。', timestamp: Date.now() }]);
-    }
-  }, [inputText, isPaused, tts]);
-
-  // ── Pause ──
-  const togglePause = useCallback(() => {
-    setIsPaused((p) => {
-      const next = !p;
-      if (next) { timer.pause(); tts.stop(); stt.abort(); }
-      else { timer.start(); }
-      return next;
-    });
-  }, [timer, tts, stt]);
-
-  // ── Save ──
+  // ── Save（必须在 sendMessage 之前定义）──
   const saveToHistory = useCallback((silent = false, overrideMessages?: ChatMessage[]): string | null => {
     const msgs = overrideMessages ?? messages;
     if (msgs.length === 0) return null;
@@ -312,7 +281,7 @@ export default function InterviewPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, state, configuredDuration, isReviewMode, navigate]);
 
-  // ── Score (仅完整面试) ──
+  // ── Score（必须在 sendMessage 之前定义）──
   const runScoring = useCallback(async (recordId: string) => {
     if (!apiReady) return;
     setScoring(true);
@@ -323,14 +292,13 @@ export default function InterviewPage() {
       .join('\n');
 
     try {
-      const llmClient = createLLMClient({ apiKey, baseUrl: providerConfig.baseUrl });
+      const llmClient = createLLMClient({ apiKey, baseUrl: providerConfig.baseUrl, model: providerConfig.defaultModel });
       const prompt = buildScoringPrompt(interviewMessages);
       const result = await llmClient.chat([{ role: 'user', content: prompt }]);
       const parsed = parseScoresFromJSON(result.content);
 
       if (parsed) {
         setScores(parsed);
-        // 更新 localStorage 中的记录
         const raw = localStorage.getItem('ai_interview_history');
         if (raw) {
           const history: HistoryRecord[] = JSON.parse(raw);
@@ -350,14 +318,213 @@ export default function InterviewPage() {
       setScoring(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages, apiReady, apiKey, providerConfig.baseUrl]);
+  }, [messages, apiReady, apiKey, providerConfig.baseUrl, providerConfig.defaultModel]);
 
-  // ── STT auto-fill ──
-  useEffect(() => {
-    if (stt.transcript && !stt.isListening) {
-      setInputText((prev) => prev + stt.transcript);
+  // ── Send ──
+  const inputTextRef = useRef('');
+  useEffect(() => { inputTextRef.current = inputText; }, [inputText]);
+
+  const sendMessageRef = useRef<(textOverride?: string) => Promise<void>>(async () => {});
+
+  const sendMessage = useCallback(async (textOverride?: string) => {
+    const text = (textOverride ?? inputTextRef.current).trim();
+    if (!text || isPaused) return;
+
+    const userText = text;
+    setMessages((prev) => [...prev, { role: 'user', text: userText, timestamp: Date.now() }]);
+    setInputText('');
+    inputTextRef.current = '';
+    setTimeout(scrollToBottom, 100);
+
+    // ── Agent 模式 ──
+    if (agentMode) {
+      try {
+        await agent.submitAnswer(userText);
+        const agentMsgs = agent.messages;
+        setMessages(agentMsgs);
+        setTimeout(scrollToBottom, 100);
+        triggerSttRestart();
+
+        if (agent.isComplete && agent.finalReport) {
+          const report = agent.finalReport;
+          setScores({
+            dimensions: report.dimensions,
+            totalScore: report.totalScore,
+            summary: report.summary || '面试完成',
+          });
+          const recordId = saveToHistory(true, agentMsgs);
+          if (recordId) {
+            const raw = localStorage.getItem('ai_interview_history');
+            if (raw) {
+              const history: HistoryRecord[] = JSON.parse(raw);
+              const idx = history.findIndex((r) => r.id === recordId);
+              if (idx >= 0) {
+                history[idx].score = report.totalScore;
+                history[idx].dimensions = Object.fromEntries(
+                  report.dimensions.map((d) => [d.name, d.score]),
+                );
+                localStorage.setItem('ai_interview_history', JSON.stringify(history));
+              }
+            }
+          }
+        }
+      } catch {
+        setMessages((prev) => [...prev, { role: 'interviewer', text: '抱歉，Agent 处理出现问题。请稍后重试。', timestamp: Date.now() }]);
+      }
+      return;
     }
-  }, [stt.transcript, stt.isListening]);
+
+    // 经典模式
+    if (!aiRef.current) return;
+    try {
+      const response = await aiRef.current.processTurn(userText);
+      setMessages((prev) => [...prev, { role: 'interviewer', text: response.text, timestamp: Date.now() }]);
+      tts.speak(response.text);
+      setTimeout(scrollToBottom, 100);
+      triggerSttRestart();
+
+      if (response.vision?.suspiciousBehavior) {
+        const detail = response.vision?.suspicionDetail || '异常行为检测';
+        setMessages((prev) => [...prev, {
+          role: 'system', text: `⚠️ ${detail}`, timestamp: Date.now(), systemType: 'alert',
+        }]);
+      }
+      if (response.isComplete) {
+        const recordId = saveToHistory(true);
+        if (recordId) {
+          setTimeout(() => runScoring(recordId), 500);
+        }
+      }
+    } catch {
+      setMessages((prev) => [...prev, { role: 'interviewer', text: '抱歉，连接出现问题。请稍后重试。', timestamp: Date.now() }]);
+    }
+  }, [isPaused, agentMode, agent, saveToHistory, runScoring, tts, triggerSttRestart, scrollToBottom]);
+
+  // 保持 sendMessageRef 同步（供 useEffect 使用，避免循环依赖）
+  useEffect(() => { sendMessageRef.current = sendMessage; }, [sendMessage]);
+
+  // ── Start ──
+  const handleStart = useCallback(async () => {
+    setHasStarted(true);
+    startTimeRef.current = Date.now();
+    timer.start();
+
+    if (agentMode) {
+      try {
+        const welcome = await agent.start();
+        setMessages(agent.messages);
+        tts.speak(welcome);
+      } catch {
+        setHasStarted(false);
+      }
+      setTimeout(scrollToBottom, 200);
+      return;
+    }
+
+    if (!aiRef.current) return;
+    let welcome: string;
+    if (isResume && state?.resumeFrom) {
+      welcome = aiRef.current.resumeFrom(state.resumeFrom);
+      setMessages([
+        ...state.resumeFrom,
+        { role: 'interviewer', text: welcome, timestamp: Date.now() },
+      ]);
+    } else {
+      welcome = aiRef.current.getWelcomeMessage();
+      setMessages([{ role: 'interviewer', text: welcome, timestamp: Date.now() }]);
+    }
+    tts.speak(welcome);
+    setTimeout(scrollToBottom, 200);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isResume, timer, tts, agentMode, agent]);
+
+  // ── Pause ──
+  const togglePause = useCallback(() => {
+    setIsPaused((p) => {
+      const next = !p;
+      if (next) { timer.pause(); tts.stop(); stt.abort(); }
+      else { timer.start(); }
+      return next;
+    });
+  }, [timer, tts, stt]);
+
+  // ── STT: 实时显示 + 自动提交 + 云端降级 ──
+  useEffect(() => {
+    if (stt.isListening && stt.interimTranscript) {
+      setInputText(stt.interimTranscript);
+      inputTextRef.current = stt.interimTranscript;
+    }
+  }, [stt.interimTranscript, stt.isListening]);
+
+  // STT 开始监听 → 同步开始录音
+  useEffect(() => {
+    if (stt.isListening) {
+      startRecording();
+    }
+  }, [stt.isListening, startRecording]);
+
+  // 语音结束 → 云端降级 → 自动提交
+  useEffect(() => {
+    if (!stt.transcript || stt.isListening || !hasStarted || isPaused) return;
+
+    const handleTranscript = async () => {
+      let finalText = stt.transcript.trim();
+      if (!finalText) return;
+
+      // 云端降级：置信度不足 或 浏览器不支持
+      if (!stt.isSupported || stt.needsCloudFallback) {
+        const cloudText = await transcribeCloud();
+        if (cloudText) {
+          finalText = cloudText;
+        }
+      }
+
+      if (finalText) {
+        setInputText(finalText);
+        inputTextRef.current = finalText;
+        setTimeout(() => {
+          sendMessageRef.current(finalText);
+        }, 600);
+      }
+    };
+
+    handleTranscript();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stt.transcript, stt.isListening, hasStarted, isPaused]);
+
+  // 面试开始后 / Agent 回复后自动开启麦克风（仅触发一次，不随 stt.state 循环）
+  useEffect(() => {
+    if (hasStarted && !isPaused) {
+      const initMic = async () => {
+        try {
+          await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch { /* 权限被拒 */ }
+        if (stt.state === 'idle' || stt.state === 'error') {
+          stt.start();
+        }
+      };
+      const timer = setTimeout(initMic, 300);
+      return () => clearTimeout(timer);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasStarted, isPaused, sttRestartToken]);
+
+  // 本地 STT 长时间无语音 → 提示可能被墙（Google 服务不可达）
+  const [sttSilentSeconds, setSttSilentSeconds] = useState(0);
+  useEffect(() => {
+    if (!stt.isListening) {
+      setSttSilentSeconds(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setSttSilentSeconds((s) => s + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [stt.isListening]);
+
+  // 超过 8 秒没检测到语音 → 可能被墙，提示用云端
+  const sttBlockedByGFW = stt.isListening && sttSilentSeconds > 8 && !stt.interimTranscript;
+  // stt.state 变化不再触发自动重启（避免 idle→listening→idle 死循环）
 
   return (
     <div className="flex h-[calc(100vh-8rem)] gap-0 p-4">
@@ -441,7 +608,12 @@ export default function InterviewPage() {
               }
 
               return (
-                <div key={i} className={`mb-4 flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div key={i} className={`mb-4 flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                  <span className={`mb-1 text-[0.6875rem] font-medium ${
+                    msg.role === 'user' ? 'text-[#0071e3]' : 'text-[#86868b]'
+                  }`}>
+                    {msg.role === 'user' ? '🧑 候选人' : '🤖 面试官'}
+                  </span>
                   <div
                     className={`max-w-[72%] rounded-2xl px-4 py-2.5 ${
                       msg.role === 'user'
@@ -454,6 +626,34 @@ export default function InterviewPage() {
                 </div>
               );
             })
+          )}
+          {/* STT 等待 / GFW 提示 */}
+          {hasStarted && !isPaused && stt.state === 'idle' && messages.length > 0 && (
+            <div className="mb-3 flex justify-center">
+              <div className="rounded-full bg-[#f5f5f7] px-4 py-1.5 text-[0.75rem] text-[#86868b]">
+                🎤 点击底部 🎤 按钮开始语音输入
+                {providerConfig.id === 'openai' && '（支持云端转写）'}
+              </div>
+            </div>
+          )}
+          {hasStarted && !isPaused && sttBlockedByGFW && (
+            <div className="mb-3 flex justify-center">
+              <div className="rounded-full bg-[#ff9500]/10 px-4 py-1.5 text-[0.75rem] text-[#ff9500]">
+                ⚠ 本地语音识别无响应（可能被墙），请点击 🎤 使用云端转写
+              </div>
+            </div>
+          )}
+
+          {/* 实时语音气泡：边说边显示 */}
+          {hasStarted && !isPaused && stt.isListening && stt.interimTranscript && (
+            <div className="mb-4 flex flex-col items-end">
+              <span className="mb-1 text-[0.6875rem] font-medium text-[#0071e3] animate-pulse">
+                🎤 实时转写中...
+              </span>
+              <div className="max-w-[72%] rounded-2xl rounded-br-md px-4 py-2.5 bg-[#0071e3]/20 text-[#0071e3] border border-[#0071e3]/30">
+                <p className="text-[0.875rem] leading-relaxed italic">{stt.interimTranscript}</p>
+              </div>
+            </div>
           )}
           <div ref={messagesEndRef} />
         </div>
@@ -502,16 +702,72 @@ export default function InterviewPage() {
             </div>
           </div>
 
+          {/* STT 状态提示 */}
+          {hasStarted && (
+            <div className={`mb-2 rounded-lg px-3 py-1.5 text-[0.75rem] ${
+              sttBlockedByGFW
+                ? 'bg-[#ff9500]/10 text-[#ff9500]'
+                : stt.state === 'listening'
+                  ? 'bg-[#34c759]/10 text-[#34c759]'
+                  : stt.state === 'error'
+                    ? 'bg-[#ff3b30]/10 text-[#ff3b30]'
+                    : stt.state === 'unsupported'
+                      ? 'bg-[#ff3b30]/10 text-[#ff3b30]'
+                      : 'bg-[#86868b]/10 text-[#86868b]'
+            }`}>
+              {sttBlockedByGFW && '⚠ 语音检测超时。中国地区 Chrome 语音识别依赖 Google 服务可能被墙，请使用下方 🎤 录音替代'}
+              {!sttBlockedByGFW && stt.state === 'listening' && '🎤 正在聆听... 请说话'}
+              {!sttBlockedByGFW && stt.state === 'idle' && '⏸ 点击 🎤 开始语音输入'}
+              {!sttBlockedByGFW && stt.state === 'error' && (stt.error || '语音识别出错')}
+              {!sttBlockedByGFW && stt.state === 'unsupported' && '✗ 浏览器不支持语音识别'}
+            </div>
+          )}
+          {cloudSttLoading && (
+            <div className="mb-2 rounded-lg bg-[#0071e3]/8 px-3 py-1.5 text-[0.75rem] text-[#0071e3]">
+              ☁ 正在云端转写语音...
+            </div>
+          )}
+
           {/* 输入行 */}
           <div className="flex items-center gap-2">
             <button
-              onClick={() => (stt.isListening ? stt.stop() : stt.start())}
+              onClick={async () => {
+                // 如果在录音中 → 停止并转写
+                if (mediaRecorderRef.current?.state === 'recording') {
+                  const blob = await stopRecording();
+                  if (blob && apiKey && providerConfig.id === 'openai') {
+                    setCloudSttLoading(true);
+                    try {
+                      const r = await transcribeWithWhisper(blob, { apiKey, language: 'zh' });
+                      if (r.text?.trim()) {
+                        setInputText(r.text.trim());
+                        inputTextRef.current = r.text.trim();
+                        setTimeout(() => sendMessageRef.current(r.text.trim()), 600);
+                      }
+                    } catch {} finally { setCloudSttLoading(false); }
+                  }
+                  return;
+                }
+                // 如果在本地STT聆听中 → 停止
+                if (stt.isListening) {
+                  stt.stop();
+                  return;
+                }
+                // 开启语音输入：优先本地STT，同时开启录音作备份
+                try { await navigator.mediaDevices.getUserMedia({ audio: true }); } catch {}
+                if (stt.isSupported) stt.start();
+                if (providerConfig.id === 'openai') startRecording();
+              }}
               disabled={!hasStarted || isPaused || (agentMode && agent.isProcessing)}
               className={`apple-btn-secondary !px-3 !py-2 text-[0.8125rem] disabled:opacity-40 ${
-                stt.isListening ? '!bg-[#ff3b30]/10 !text-[#ff3b30]' : ''
+                (stt.isListening || mediaRecorderRef.current?.state === 'recording')
+                  ? '!bg-[#ff3b30]/10 !text-[#ff3b30]' : ''
               }`}
+              title="点击开始语音输入，再次点击停止"
             >
-              {stt.isListening ? '⏹' : '🎤'}
+              {cloudSttLoading ? '☁' :
+               mediaRecorderRef.current?.state === 'recording' ? '⏺' :
+               stt.isListening ? '⏹' : '🎤'}
             </button>
             <input
               type="text"
@@ -581,10 +837,34 @@ export default function InterviewPage() {
         />
         {/* 音频状态 */}
         <div className="rounded-2xl bg-white/60 px-3 py-2 shadow-sm">
-          <div className="flex items-center justify-between text-[0.75rem] text-[#86868b]">
-            <span>麦克风</span>
-            <span>{audio.state === 'active' ? '🟢 已开启' : '⚪ 未开启'}</span>
+          <div className="flex items-center justify-between text-[0.75rem]">
+            <span className="text-[#86868b]">麦克风</span>
+            {audio.state === 'active' ? (
+              <span className="font-medium text-[#34c759]">🟢 已开启</span>
+            ) : audio.state === 'requesting' ? (
+              <span className="text-[#ff9500]">⏳ 请求中...</span>
+            ) : audio.state === 'error' ? (
+              <button
+                onClick={() => audio.start()}
+                className="rounded-lg bg-[#ff3b30]/10 px-2 py-0.5 text-[0.6875rem] font-medium text-[#ff3b30]"
+              >
+                🔴 重试
+              </button>
+            ) : (
+              <button
+                onClick={() => audio.start()}
+                className="rounded-lg bg-[#0071e3]/10 px-2 py-0.5 text-[0.6875rem] font-medium text-[#0071e3]"
+              >
+                ⚪ 点击开启
+              </button>
+            )}
           </div>
+          {audio.state === 'active' && (
+            <div className="mt-1 flex items-center gap-1 text-[0.6875rem] text-[#86868b]">
+              <VolumeMeter level={audio.volumeLevel} isActive={true} />
+              <span>音量监测中</span>
+            </div>
+          )}
         </div>
 
         {/* Agent 模式开关 */}

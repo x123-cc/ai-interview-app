@@ -13,6 +13,8 @@ export interface ProviderConfig {
   openaiCompatible: boolean;
   /** 是否需要 x-api-key header (而非 Bearer) */
   useXApiKey: boolean;
+  /** 是否支持 function calling / tools */
+  supportsTools: boolean;
 }
 
 /** 所有服务商配置 */
@@ -24,6 +26,7 @@ export const PROVIDERS: Record<LLMProvider, ProviderConfig> = {
     defaultModel: 'gpt-4o',
     openaiCompatible: true,
     useXApiKey: false,
+    supportsTools: true,
   },
   anthropic: {
     id: 'anthropic',
@@ -32,6 +35,7 @@ export const PROVIDERS: Record<LLMProvider, ProviderConfig> = {
     defaultModel: 'claude-sonnet-4-6',
     openaiCompatible: false,
     useXApiKey: true,
+    supportsTools: true,
   },
   qwen: {
     id: 'qwen',
@@ -40,6 +44,7 @@ export const PROVIDERS: Record<LLMProvider, ProviderConfig> = {
     defaultModel: 'qwen-plus',
     openaiCompatible: true,
     useXApiKey: false,
+    supportsTools: false,
   },
   glm: {
     id: 'glm',
@@ -48,6 +53,7 @@ export const PROVIDERS: Record<LLMProvider, ProviderConfig> = {
     defaultModel: 'glm-4-flash',
     openaiCompatible: true,
     useXApiKey: false,
+    supportsTools: false,
   },
   hunyuan: {
     id: 'hunyuan',
@@ -56,6 +62,7 @@ export const PROVIDERS: Record<LLMProvider, ProviderConfig> = {
     defaultModel: 'hunyuan-lite',
     openaiCompatible: true,
     useXApiKey: false,
+    supportsTools: false,
   },
   custom: {
     id: 'custom',
@@ -64,6 +71,7 @@ export const PROVIDERS: Record<LLMProvider, ProviderConfig> = {
     defaultModel: 'gpt-4o',
     openaiCompatible: true,
     useXApiKey: false,
+    supportsTools: false,
   },
 };
 
@@ -73,16 +81,24 @@ export const PROVIDERS: Record<LLMProvider, ProviderConfig> = {
 export function getProviderConfig(): ProviderConfig {
   const provider = (localStorage.getItem('ai_interview_provider') || 'openai') as LLMProvider;
   const config = PROVIDERS[provider] || PROVIDERS.openai;
+  const userModel = localStorage.getItem('ai_interview_model') || '';
+
+  // 用户自定义模型优先
+  const defaultModel = userModel || config.defaultModel;
 
   // 自定义端点从 localStorage 读取 URL
   if (provider === 'custom') {
     return {
       ...config,
       baseUrl: localStorage.getItem('ai_interview_base_url') || '',
+      defaultModel,
     };
   }
 
-  return config;
+  return {
+    ...config,
+    defaultModel,
+  };
 }
 
 /**

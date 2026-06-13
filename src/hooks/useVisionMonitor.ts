@@ -18,9 +18,28 @@ interface VisionMonitorOptions {
   onVisionResult?: (msg: ChatMessage) => void;
 }
 
-/** 从 stream 抓取一帧 base64 */
+/** 从已有 DOM video 元素抓取一帧 base64（优先），失败则创建临时 video */
 function captureFrame(stream: MediaStream): Promise<string | null> {
   return new Promise((resolve) => {
+    // 优先从已渲染的 video 元素抓帧（无需 play()，无用户手势限制）
+    const existingVideo = document.querySelector('video');
+    if (existingVideo && existingVideo.videoWidth > 0) {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 480;
+        canvas.height = 360;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { resolve(null); return; }
+        ctx.drawImage(existingVideo, 0, 0, canvas.width, canvas.height);
+        const base64 = canvas.toDataURL('image/jpeg', 0.6);
+        resolve(base64);
+        return;
+      } catch {
+        // 抓帧失败，继续尝试临时 video
+      }
+    }
+
+    // 降级：创建临时 video（可能因 autoplay 策略失败）
     const video = document.createElement('video');
     video.srcObject = stream;
     video.playsInline = true;
@@ -30,13 +49,17 @@ function captureFrame(stream: MediaStream): Promise<string | null> {
       canvas.width = 480;
       canvas.height = 360;
       const ctx = canvas.getContext('2d');
-      if (!ctx) { resolve(null); return; }
+      if (!ctx) { video.pause(); video.srcObject = null; resolve(null); return; }
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const base64 = canvas.toDataURL('image/jpeg', 0.6);
       video.pause();
       video.srcObject = null;
       resolve(base64);
-    }).catch(() => resolve(null));
+    }).catch((e) => {
+      console.warn('[VisionMonitor] 临时video播放失败:', e.message);
+      video.srcObject = null;
+      resolve(null);
+    });
   });
 }
 
@@ -71,7 +94,10 @@ export function useVisionMonitor(options: VisionMonitorOptions) {
     analysingRef.current = true;
     try {
       const frame = await captureFrame(stream);
-      if (!frame) return;
+      if (!frame) {
+        console.warn('[VisionMonitor] 抓帧失败：无画面数据');
+        return;
+      }
 
       const resp = await fetch(`${baseUrl}/chat/completions`, {
         method: 'POST',
@@ -96,7 +122,10 @@ export function useVisionMonitor(options: VisionMonitorOptions) {
         }),
       });
 
-      if (!resp.ok) return;
+      if (!resp.ok) {
+        console.warn(`[VisionMonitor] API请求失败 HTTP ${resp.status}`);
+        return;
+      }
 
       const data = await resp.json();
       const content: string = data.choices?.[0]?.message?.content || '';
@@ -133,9 +162,11 @@ export function useVisionMonitor(options: VisionMonitorOptions) {
 
         setLastResult(msg);
         onVisionResult?.(msg);
+      } else {
+        console.warn('[VisionMonitor] LLM返回非JSON:', content.slice(0, 100));
       }
-    } catch {
-      // 静默失败，视觉监控不应打断面试
+    } catch (err) {
+      console.warn('[VisionMonitor] 分析失败:', err instanceof Error ? err.message : err);
     } finally {
       analysingRef.current = false;
     }

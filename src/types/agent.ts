@@ -244,6 +244,8 @@ export interface AgentConfig {
   questions?: string[];
   /** 复盘上下文 */
   context?: string;
+  /** 当前 LLM 服务商是否支持 function calling / tools */
+  supportsTools: boolean;
 }
 
 /** Agent 响应（返回给 UI 层） */
